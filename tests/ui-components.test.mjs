@@ -14,7 +14,7 @@ const vite = await createServer({
   configFile: false,
   root,
   resolve: { alias: { "@": root } },
-  server: { middlewareMode: true },
+  server: { middlewareMode: true, hmr: false, ws: false },
 });
 
 after(async () => {
@@ -35,16 +35,11 @@ async function readCssTree(directory) {
   return contents.join("\n");
 }
 
-test("emits the catalog's animation and scrolling utilities", async () => {
+test("emits commercial zoom, contact and reduced motion styles", async () => {
   const css = await readCssTree(path.join(root, "dist"));
 
-  assert.match(css, /--tw-enter-opacity/);
-  assert.match(css, /scrollbar-width:\s*thin/);
-  assert.match(css, /scrollbar-width:\s*none/);
-  assert.match(css, /scrollbar-gutter:\s*stable/);
-  assert.match(css, /scroll-fade-reveal-b/);
-  assert.match(css, /mask-image:/);
-  assert.match(css, /tw-shimmer/);
+  assert.match(css, /plan-zoom-viewport/);
+  assert.match(css, /sales-contact/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });
 

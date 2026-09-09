@@ -1,28 +1,24 @@
-# MANIFEST — PILITAS MASTER V51 COMERCIAL
+# MANIFEST — Pilitas
 
-- Commit de origen: `fc947b8a66f3a8e5431e745499c76d6056774973`
-- Archivos inventariados: **199**
-- Archivos en `public/`: **102**
-- Recursos en `public/media/`: **98**
-- Tamaño sin comprimir inventariado: **19,013,335 bytes**
-
-El listado excluye únicamente `MANIFEST.md` y `SHA256SUMS.txt`, que son metadatos generados para el paquete. Las sumas criptográficas se encuentran en `SHA256SUMS.txt`.
+Archivos fuente y recursos del repositorio tras las correcciones. Excluye este manifiesto y SHA256SUMS.txt.
 
 ```text
 RUTA	BYTES
-.env.example	268
-.gitignore	498
+.env.example	294
+.gitattributes	66
+.gitignore	512
 .npmrc	76
 .openai/hosting.json	91
 README.ORIGINAL.md	5703
-README.md	6460
-app/api/inventory/route.ts	3030
+README.md	4362
+app/api/inventory/route.ts	456
 app/chatgpt-auth.ts	2404
-app/globals.css	99184
+app/globals.css	99614
 app/layout.tsx	630
-app/page.tsx	100647
+app/page.tsx	59035
 build/sites-vite-plugin.ts	1254
 components.json	420
+components/pilitas/zoomable-plan.tsx	10922
 components/ui/accordion.tsx	2048
 components/ui/alert-dialog.tsx	5439
 components/ui/alert.tsx	1614
@@ -84,6 +80,7 @@ components/ui/textarea.tsx	759
 components/ui/toggle-group.tsx	2308
 components/ui/toggle.tsx	1565
 components/ui/tooltip.tsx	1830
+config/contact.json	103
 db/index.ts	423
 db/schema.ts	169
 drizzle.config.ts	148
@@ -91,11 +88,20 @@ drizzle/meta/_journal.json	61
 eslint.config.mjs	846
 examples/d1/app/api/notes/route.ts	1700
 examples/d1/db/schema.ts	370
+hooks/use-inventory.ts	1776
 hooks/use-mobile.ts	565
+lib/pilitas/assistant.ts	6862
+lib/pilitas/catalog.ts	14315
+lib/pilitas/contact.ts	1302
+lib/pilitas/format.ts	1901
+lib/pilitas/i18n.ts	10284
+lib/pilitas/inventory-source.ts	2395
+lib/pilitas/inventory.ts	4911
+lib/pilitas/types.ts	1428
 lib/utils.ts	177
 next.config.ts	133
-package-lock.json	498254
-package.json	1963
+package-lock.json	485616
+package.json	2126
 postcss.config.mjs	94
 public/favicon.svg	712
 public/file.svg	392
@@ -201,13 +207,16 @@ public/media/unit-302.webp	144270
 public/window.svg	386
 scripts/build-verified.sh	661
 scripts/install-ci.sh	6326
+scripts/run.mjs	2449
 scripts/sites-env.sh	1530
-tests/rendered-html.test.mjs	967
-tests/ui-components.test.mjs	2840
-tsconfig.json	666
+scripts/verify-hosting.mjs	587
+tests/commercial.test.mjs	5456
+tests/rendered-html.test.mjs	1065
+tests/ui-components.test.mjs	2641
+tsconfig.json	758
 vendor/shadcn-tailwind-4.13.0.LICENSE.md	1063
 vendor/shadcn-tailwind-4.13.0.css	16041
-vite.config.ts	1807
+vite.config.ts	1832
+worker-env.d.ts	76
 worker/index.ts	1731
 ```
-

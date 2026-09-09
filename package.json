@@ -6,13 +6,15 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "install:ci": "bash scripts/install-ci.sh",
-    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
-    "build": "bash scripts/build-verified.sh",
-    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
-    "test": "npm run build && node --test tests/*.test.mjs",
-    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "install:ci": "node scripts/run.mjs install:ci",
+    "dev": "node scripts/run.mjs dev",
+    "build": "node scripts/run.mjs build",
+    "start": "node scripts/run.mjs start",
+    "test": "node scripts/run.mjs test",
+    "lint": "node scripts/run.mjs lint",
+    "typecheck": "node scripts/run.mjs typecheck",
+    "verify": "npm run lint && npm run typecheck && npm test",
+    "db:generate": "node scripts/run.mjs db:generate"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -26,12 +28,12 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.31.0",
-    "next": "16.2.6",
+    "next": "16.3.4",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.6.7",
-    "react": "19.2.6",
+    "react": "19.2.8",
     "react-day-picker": "^10.0.1",
-    "react-dom": "19.2.6",
+    "react-dom": "19.2.8",
     "react-hook-form": "^7.85.0",
     "react-resizable-panels": "^4.12.2",
     "recharts": "^3.8.0",
@@ -41,24 +43,33 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
+    "@cloudflare/vite-plugin": "1.54.6",
+    "@cloudflare/workers-types": "5.20260908.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
+    "@vitejs/plugin-rsc": "0.5.34",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
+    "eslint-config-next": "16.3.4",
+    "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "tw-animate-css": "^1.4.0",
     "typescript": "5.9.3",
-    "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "vinext": "1.0.0-beta.9",
+    "vite": "8.2.2",
+    "wrangler": "4.130.0"
   },
   "type": "module",
-  "displayName": "ALGO Sales Room \u2014 Pilitas Demo"
+  "overrides": {
+    "miniflare": {
+      "sharp": "0.35.4"
+    },
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.25.12"
+    }
+  },
+  "displayName": "ALGO Sales Room — Pilitas Demo"
 }

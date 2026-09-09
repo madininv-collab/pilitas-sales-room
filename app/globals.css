@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 @import "../vendor/shadcn-tailwind-4.13.0.css";
 
+.sales-contacts { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px; }
+.sales-contact { color: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; padding: 6px; }
+.sales-contact:focus-visible { outline: 2px solid var(--algo); outline-offset: 3px; }
+.header-availability.inventory-sync-unavailable i,
+.header-availability.inventory-sync-loading i { background: #d9b76b; box-shadow: none; }
+
 :root {
   --night: #0b0d0a;
   --ivory: #f4f0e8;

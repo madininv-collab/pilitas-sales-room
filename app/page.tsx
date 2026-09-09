@@ -33,888 +33,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-type UnitId =
-  | "201" | "202" | "203" | "204"
-  | "301" | "302" | "303" | "304"
-  | "401" | "402" | "403" | "404"
-  | "501" | "502" | "PH1" | "PH2";
-type ViewId = "front" | "rear";
-type AmenityId = "lobby" | "rooftop";
-type UnitStatus = "Disponible" | "Apartada" | "Vendida";
-type ExperienceView = "interior" | "plan" | "tour";
-type PlanView = "color" | "clean" | "dimensions";
-type RenderSourceId = "401" | "402" | "403" | "404" | "PH1" | "PH2";
-type Language = "es" | "en";
-type Currency = "MXN" | "USD";
-type TouchIntroStep = "presentation" | "guides";
-
-const planViews: PlanView[] = ["color", "clean", "dimensions"];
-const MOBILE_GESTURE_MEDIA = "(max-width: 767px), (max-width: 1199px) and (orientation: landscape) and (max-height: 600px)";
-
-type Residence = {
-  id: UnitId;
-  code: string;
-  name: string;
-  eyebrow: string;
-  price: number;
-  area: number;
-  beds: number;
-  baths: number;
-  level: number;
-  status: UnitStatus;
-  description: string;
-  images: string[];
-};
-
-type Amenity = {
-  id: AmenityId;
-  label: Record<Language, string>;
-  eyebrow: Record<Language, string>;
-  description: Record<Language, string>;
-  images: string[];
-};
-
-type GeneralPlan = {
-  id: string;
-  label: Record<Language, string>;
-  src: string;
-};
-
-type VirtualTour = {
-  src: string;
-  viewSource: RenderSourceId;
-};
-
-// Familia 01: el orden A/B es intencional y esta galería se comparte
-// exclusivamente entre 201, 301 y 401.
-const family01Gallery = [
-  "/media/interiors/family-01-a.webp",
-  "/media/interiors/family-01-b.webp",
-];
-const gallery402 = ["/media/interiors/3-402.webp", "/media/interiors/4-402.webp"];
-const gallery403 = ["/media/interiors/5-403.webp", "/media/interiors/6-403.webp"];
-const gallery404 = ["/media/interiors/7-404.webp", "/media/interiors/8-404.webp"];
-const galleryPH1 = ["/media/interiors/9-PH1.webp", "/media/interiors/10-PH1.webp", "/media/interiors/11-PH1.webp"];
-const galleryPH2 = ["/media/interiors/12-PH2.webp", "/media/interiors/13-PH2.webp", "/media/interiors/14-PH2.webp"];
-
-const amenities: Record<AmenityId, Amenity> = {
-  lobby: {
-    id: "lobby",
-    label: { es: "Lobby", en: "Lobby" },
-    eyebrow: { es: "Acceso principal", en: "Main entrance" },
-    description: {
-      es: "Un acceso cálido y privado que recibe a residentes y visitantes en Las Verandas de Olas Altas.",
-      en: "A warm, private arrival space welcoming residents and guests at Las Verandas de Olas Altas.",
-    },
-    images: ["/media/amenities/lobby.webp"],
-  },
-  rooftop: {
-    id: "rooftop",
-    label: { es: "Rooftop", en: "Rooftop" },
-    eyebrow: { es: "Terraza con alberca", en: "Pool terrace" },
-    description: {
-      es: "Una terraza elevada con alberca, áreas de descanso y vistas abiertas hacia Puerto Vallarta y el Pacífico.",
-      en: "An elevated terrace with a pool, lounge areas, and open views toward Puerto Vallarta and the Pacific.",
-    },
-    images: [
-      "/media/amenities/rooftop-01.webp",
-      "/media/amenities/rooftop-02.webp",
-      "/media/amenities/rooftop-03.webp",
-    ],
-  },
-};
-
-const generalPlans: GeneralPlan[] = [
-  { id: "basement", label: { es: "Sótano", en: "Basement" }, src: "/media/general-plans/00-basement.webp" },
-  { id: "ground-floor", label: { es: "Planta baja", en: "Ground floor" }, src: "/media/general-plans/01-ground-floor.webp" },
-  { id: "level-2", label: { es: "Nivel 2", en: "Level 2" }, src: "/media/general-plans/02-level-2.webp" },
-  { id: "level-3", label: { es: "Nivel 3", en: "Level 3" }, src: "/media/general-plans/03-level-3.webp" },
-  { id: "level-4", label: { es: "Nivel 4", en: "Level 4" }, src: "/media/general-plans/04-level-4.webp" },
-  { id: "level-5", label: { es: "Nivel 5", en: "Level 5" }, src: "/media/general-plans/05-level-5.webp" },
-  { id: "level-6", label: { es: "Nivel 6", en: "Level 6" }, src: "/media/general-plans/06-level-6.webp" },
-  { id: "rooftop", label: { es: "Roof", en: "Rooftop" }, src: "/media/general-plans/07-rooftop.webp" },
-];
-
-const renderSourceByUnit: Record<UnitId, RenderSourceId> = {
-  "201": "401",
-  "202": "402",
-  "203": "403",
-  "204": "404",
-  "301": "401",
-  "302": "402",
-  "303": "403",
-  "304": "404",
-  "401": "401",
-  "402": "402",
-  "403": "403",
-  "404": "404",
-  "501": "PH1",
-  "502": "PH2",
-  PH1: "PH1",
-  PH2: "PH2",
-};
-
-const virtualTours: Partial<Record<UnitId, VirtualTour>> = {
-  PH1: {
-    src: "https://madininv-collab.github.io/recorridos-360/PENTHHOUSE/",
-    viewSource: "PH1",
-  },
-  "501": {
-    src: "https://madininv-collab.github.io/recorridos-360/PENTHHOUSE/",
-    viewSource: "PH1",
-  },
-  "201": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20301/",
-    viewSource: "401",
-  },
-  "301": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20301/",
-    viewSource: "401",
-  },
-  "401": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20301/",
-    viewSource: "401",
-  },
-  "202": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20302/",
-    viewSource: "402",
-  },
-  "302": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20302/",
-    viewSource: "402",
-  },
-  "402": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20302/",
-    viewSource: "402",
-  },
-  "204": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20304/",
-    viewSource: "404",
-  },
-  "304": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20304/",
-    viewSource: "404",
-  },
-  "404": {
-    src: "https://madininv-collab.github.io/recorridos-360/UNIDAD%20304/",
-    viewSource: "404",
-  },
-};
-
-function renderSourceLabel(id: RenderSourceId, language: Language) {
-  return id.startsWith("PH") ? `Penthouse ${id}` : `${language === "es" ? "Residencia" : "Residence"} ${id}`;
-}
-
-function floorPlanFor(id: UnitId, view: PlanView) {
-  const suffix = view === "color" ? "" : `-${view}`;
-  return `/media/plans/plan-${id.toLowerCase()}${suffix}.webp`;
-}
-
-type PlanTransform = { scale: number; x: number; y: number };
-type PlanPointer = { x: number; y: number };
-type PlanTap = { time: number; x: number; y: number };
-type PlanDragStart = {
-  pointerX: number;
-  pointerY: number;
-  scale: number;
-  translateX: number;
-  translateY: number;
-};
-type PlanPinchStart = {
-  distance: number;
-  centerX: number;
-  centerY: number;
-  scale: number;
-  translateX: number;
-  translateY: number;
-};
-
-type ZoomablePlanProps = {
-  src: string;
-  alt: string;
-  interactionLabel: string;
-  imageClassName: string;
-  viewportClassName?: string;
-  active?: boolean;
-  loading?: "eager" | "lazy";
-  fetchPriority?: "high" | "low" | "auto";
-  onNavigate?: (direction: -1 | 1) => void;
-};
-
-const MAX_PLAN_ZOOM = 4;
-const ZOOM_RETURN_DURATION_MS = 280;
-
-function usesTransientMobileZoom() {
-  return typeof window !== "undefined" && window.matchMedia(MOBILE_GESTURE_MEDIA).matches;
-}
-
-function ZoomablePlan({
-  src,
-  alt,
-  interactionLabel,
-  imageClassName,
-  viewportClassName = "",
-  active = true,
-  loading = "eager",
-  fetchPriority = "auto",
-  onNavigate,
-}: ZoomablePlanProps) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const pointersRef = useRef(new Map<number, PlanPointer>());
-  const dragStartRef = useRef<PlanDragStart | null>(null);
-  const pinchStartRef = useRef<PlanPinchStart | null>(null);
-  const pinchUsedRef = useRef(false);
-  const lastTapRef = useRef<PlanTap | null>(null);
-  const resetTimerRef = useRef<number | null>(null);
-  const transformRef = useRef<PlanTransform>({ scale: 1, x: 0, y: 0 });
-  const [transform, setTransform] = useState<PlanTransform>({ scale: 1, x: 0, y: 0 });
-  const [isResetting, setIsResetting] = useState(false);
-
-  useEffect(() => () => {
-    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
-  }, []);
-
-  function applyTransform(scale: number, x: number, y: number) {
-    const nextScale = Math.min(MAX_PLAN_ZOOM, Math.max(1, scale));
-    const viewport = viewportRef.current;
-    const maxX = viewport ? viewport.clientWidth * (nextScale - 1) / 2 : 0;
-    const maxY = viewport ? viewport.clientHeight * (nextScale - 1) / 2 : 0;
-    const next = {
-      scale: nextScale,
-      x: Math.min(maxX, Math.max(-maxX, nextScale === 1 ? 0 : x)),
-      y: Math.min(maxY, Math.max(-maxY, nextScale === 1 ? 0 : y)),
-    };
-    transformRef.current = next;
-    setTransform(next);
-  }
-
-  function resetTransform(animate = false) {
-    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
-    resetTimerRef.current = null;
-    setIsResetting(animate);
-    pointersRef.current.clear();
-    dragStartRef.current = null;
-    pinchStartRef.current = null;
-    pinchUsedRef.current = false;
-    lastTapRef.current = null;
-    applyTransform(1, 0, 0);
-    if (animate) {
-      resetTimerRef.current = window.setTimeout(() => {
-        setIsResetting(false);
-        resetTimerRef.current = null;
-      }, ZOOM_RETURN_DURATION_MS);
-    }
-  }
-
-  function beginPointer(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!active) return;
-    if (resetTimerRef.current !== null) window.clearTimeout(resetTimerRef.current);
-    resetTimerRef.current = null;
-    setIsResetting(false);
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (pointersRef.current.size === 1) {
-      pinchUsedRef.current = false;
-      dragStartRef.current = {
-        pointerX: event.clientX,
-        pointerY: event.clientY,
-        scale: transformRef.current.scale,
-        translateX: transformRef.current.x,
-        translateY: transformRef.current.y,
-      };
-      return;
-    }
-
-    const [first, second] = Array.from(pointersRef.current.values());
-    pinchUsedRef.current = true;
-    lastTapRef.current = null;
-    dragStartRef.current = null;
-    pinchStartRef.current = {
-      distance: Math.hypot(second.x - first.x, second.y - first.y),
-      centerX: (first.x + second.x) / 2,
-      centerY: (first.y + second.y) / 2,
-      scale: transformRef.current.scale,
-      translateX: transformRef.current.x,
-      translateY: transformRef.current.y,
-    };
-  }
-
-  function movePointer(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!active || !pointersRef.current.has(event.pointerId)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (pointersRef.current.size >= 2 && pinchStartRef.current) {
-      const viewport = viewportRef.current;
-      const [first, second] = Array.from(pointersRef.current.values());
-      if (!viewport) return;
-      const pinch = pinchStartRef.current;
-      const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
-      const centerX = (first.x + second.x) / 2;
-      const centerY = (first.y + second.y) / 2;
-      const rect = viewport.getBoundingClientRect();
-      const startOffsetX = pinch.centerX - rect.left - rect.width / 2;
-      const startOffsetY = pinch.centerY - rect.top - rect.height / 2;
-      const currentOffsetX = centerX - rect.left - rect.width / 2;
-      const currentOffsetY = centerY - rect.top - rect.height / 2;
-      const nextScale = Math.min(MAX_PLAN_ZOOM, Math.max(1, pinch.scale * distance / Math.max(1, pinch.distance)));
-      const ratio = nextScale / pinch.scale;
-      applyTransform(
-        nextScale,
-        currentOffsetX - ratio * (startOffsetX - pinch.translateX),
-        currentOffsetY - ratio * (startOffsetY - pinch.translateY),
-      );
-      return;
-    }
-
-    const drag = dragStartRef.current;
-    if (drag && transformRef.current.scale > 1) {
-      applyTransform(
-        drag.scale,
-        drag.translateX + event.clientX - drag.pointerX,
-        drag.translateY + event.clientY - drag.pointerY,
-      );
-    }
-  }
-
-  function endPointer(event: ReactPointerEvent<HTMLDivElement>, cancelled = false) {
-    if (!pointersRef.current.has(event.pointerId)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const drag = dragStartRef.current;
-    const usedPinch = pinchUsedRef.current;
-    pointersRef.current.delete(event.pointerId);
-
-    if (pointersRef.current.size === 1 && pinchUsedRef.current) {
-      const remaining = Array.from(pointersRef.current.values())[0];
-      dragStartRef.current = {
-        pointerX: remaining.x,
-        pointerY: remaining.y,
-        scale: transformRef.current.scale,
-        translateX: transformRef.current.x,
-        translateY: transformRef.current.y,
-      };
-      pinchStartRef.current = null;
-      return;
-    }
-
-    if (pointersRef.current.size > 0) return;
-
-    const deltaX = drag ? event.clientX - drag.pointerX : 0;
-    const deltaY = drag ? event.clientY - drag.pointerY : 0;
-    const isTap = Boolean(
-      !cancelled
-      && !pinchUsedRef.current
-      && drag
-      && Math.hypot(deltaX, deltaY) <= 12,
-    );
-
-    if (isTap && event.pointerType === "touch") {
-      const currentTap = { time: event.timeStamp, x: event.clientX, y: event.clientY };
-      const previousTap = lastTapRef.current;
-      if (
-        previousTap
-        && currentTap.time - previousTap.time <= 325
-        && Math.hypot(currentTap.x - previousTap.x, currentTap.y - previousTap.y) <= 36
-      ) {
-        resetTransform(usesTransientMobileZoom());
-        return;
-      }
-      lastTapRef.current = currentTap;
-    } else if (!isTap) {
-      lastTapRef.current = null;
-    }
-
-    if (usesTransientMobileZoom() && (usedPinch || transformRef.current.scale > 1.02)) {
-      resetTransform(true);
-      return;
-    }
-
-    if (
-      !cancelled
-      && !usedPinch
-      && drag
-      && transformRef.current.scale === 1
-      && onNavigate
-      && window.matchMedia(MOBILE_GESTURE_MEDIA).matches
-    ) {
-      if (Math.abs(deltaX) >= 44 && Math.abs(deltaX) >= Math.abs(deltaY) * 1.2) {
-        onNavigate(deltaX < 0 ? 1 : -1);
-      }
-    }
-
-    if (transformRef.current.scale < 1.02) applyTransform(1, 0, 0);
-    dragStartRef.current = null;
-    pinchStartRef.current = null;
-    pinchUsedRef.current = false;
-  }
-
-  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "+" || event.key === "=") {
-      event.preventDefault();
-      applyTransform(transformRef.current.scale + 0.5, transformRef.current.x, transformRef.current.y);
-    } else if (event.key === "-" || event.key === "_") {
-      event.preventDefault();
-      applyTransform(transformRef.current.scale - 0.5, transformRef.current.x, transformRef.current.y);
-    } else if (event.key === "0") {
-      event.preventDefault();
-      resetTransform();
-    } else if (transformRef.current.scale === 1 && event.key === "ArrowLeft" && onNavigate) {
-      event.preventDefault();
-      onNavigate(-1);
-    } else if (transformRef.current.scale === 1 && event.key === "ArrowRight" && onNavigate) {
-      event.preventDefault();
-      onNavigate(1);
-    }
-  }
-
-  return (
-    <div
-      ref={viewportRef}
-      className={`plan-zoom-viewport ${viewportClassName} ${transform.scale > 1 ? "is-zoomed" : ""} ${isResetting ? "is-resetting" : ""}`.trim()}
-      tabIndex={active ? 0 : -1}
-      aria-label={interactionLabel}
-      onPointerDown={beginPointer}
-      onPointerMove={movePointer}
-      onPointerUp={(event) => endPointer(event)}
-      onPointerCancel={(event) => endPointer(event, true)}
-      onDoubleClick={(event) => {
-        if (transformRef.current.scale <= 1.02 && !usesTransientMobileZoom()) return;
-        event.preventDefault();
-        event.stopPropagation();
-        resetTransform(usesTransientMobileZoom());
-      }}
-      onKeyDown={handleKeyDown}
-    >
-      <div
-        className="plan-zoom-transform"
-        style={{ transform: `translate3d(${transform.x}px, ${transform.y}px, 0) scale(${transform.scale})` }}
-      >
-        <img
-          src={src}
-          alt={alt}
-          className={imageClassName}
-          draggable={false}
-          loading={loading}
-          decoding="async"
-          fetchPriority={fetchPriority}
-        />
-      </div>
-    </div>
-  );
-}
-
-const initialResidences: Residence[] = [
-  { id: "201", code: "U 01", name: "Residencia 201", eyebrow: "Una recámara", price: 423500, area: 76.90, beds: 1, baths: 1, level: 2, status: "Disponible", description: "Residencia de una recámara con una distribución eficiente y 76.90 m² de área total.", images: family01Gallery },
-  { id: "202", code: "U 02", name: "Residencia 202", eyebrow: "Una recámara", price: 507300, area: 89.28, beds: 1, baths: 1, level: 2, status: "Vendida", description: "Residencia de una recámara con 89.28 m² de área total en el segundo nivel.", images: gallery402 },
-  { id: "203", code: "U 03", name: "Residencia 203", eyebrow: "Una recámara", price: 507300, area: 88.83, beds: 1, baths: 1, level: 2, status: "Apartada", description: "Residencia de una recámara con 88.83 m² de área total en el segundo nivel.", images: gallery403 },
-  { id: "204", code: "U 04", name: "Residencia 204", eyebrow: "Una recámara", price: 396000, area: 90.70, beds: 1, baths: 1, level: 2, status: "Disponible", description: "Residencia de una recámara con 90.70 m² de área total en el segundo nivel.", images: gallery404 },
-  { id: "301", code: "U 05", name: "Residencia 301", eyebrow: "Una recámara", price: 438900, area: 76.90, beds: 1, baths: 1, level: 3, status: "Vendida", description: "Residencia de una recámara con una distribución eficiente y 76.90 m² de área total.", images: family01Gallery },
-  { id: "302", code: "U 06", name: "Residencia 302", eyebrow: "Una recámara", price: 525100, area: 89.28, beds: 1, baths: 1, level: 3, status: "Disponible", description: "Residencia de una recámara con 89.28 m² de área total en el tercer nivel.", images: gallery402 },
-  { id: "303", code: "U 07", name: "Residencia 303", eyebrow: "Una recámara", price: 525100, area: 88.83, beds: 1, baths: 1, level: 3, status: "Apartada", description: "Residencia de una recámara con 88.83 m² de área total en el tercer nivel.", images: gallery403 },
-  { id: "304", code: "U 08", name: "Residencia 304", eyebrow: "Una recámara", price: 410400, area: 71.86, beds: 1, baths: 1, level: 3, status: "Vendida", description: "Residencia de una recámara con 71.86 m² de área total en el tercer nivel.", images: gallery404 },
-  { id: "401", code: "U 09", name: "Residencia 401", eyebrow: "Una recámara", price: 485100, area: 76.90, beds: 1, baths: 1, level: 4, status: "Disponible", description: "Residencia de una recámara con 76.90 m² de área total en el cuarto nivel.", images: family01Gallery },
-  { id: "402", code: "U 10", name: "Residencia 402", eyebrow: "Una recámara", price: 579390, area: 89.28, beds: 1, baths: 1, level: 4, status: "Vendida", description: "Residencia de una recámara con 89.28 m² de área total en el cuarto nivel.", images: gallery402 },
-  { id: "403", code: "U 11", name: "Residencia 403", eyebrow: "Una recámara", price: 579390, area: 88.83, beds: 1, baths: 1, level: 4, status: "Disponible", description: "Residencia de una recámara con 88.83 m² de área total en el cuarto nivel.", images: gallery403 },
-  { id: "404", code: "U 12", name: "Residencia 404", eyebrow: "Una recámara", price: 453600, area: 71.86, beds: 1, baths: 1, level: 4, status: "Apartada", description: "Residencia de una recámara con 71.86 m² de área total en el cuarto nivel.", images: gallery404 },
-  { id: "501", code: "U 13", name: "Residencia 501", eyebrow: "Dos recámaras", price: 853050, area: 142.63, beds: 2, baths: 2, level: 5, status: "Disponible", description: "Residencia amplia de dos recámaras y dos baños con 142.63 m² de área total.", images: galleryPH1 },
-  { id: "502", code: "U 14", name: "Residencia 502", eyebrow: "Dos recámaras", price: 853050, area: 142.63, beds: 2, baths: 2, level: 5, status: "Vendida", description: "Residencia amplia de dos recámaras y dos baños con 142.63 m² de área total.", images: galleryPH2 },
-  { id: "PH1", code: "U 15", name: "Penthouse PH1", eyebrow: "Dos recámaras", price: 916500, area: 142.63, beds: 2, baths: 2, level: 6, status: "Disponible", description: "Penthouse de dos recámaras y dos baños en el nivel superior, debajo del roof con alberca.", images: galleryPH1 },
-  { id: "PH2", code: "U 16", name: "Penthouse PH2", eyebrow: "Dos recámaras", price: 916500, area: 142.63, beds: 2, baths: 2, level: 6, status: "Vendida", description: "Penthouse de dos recámaras y dos baños en el nivel superior, debajo del roof con alberca.", images: galleryPH2 },
-];
-
-const facades: Record<ViewId, { src: string; label: string; number: string; width: number; height: number }> = {
-  front: {
-    src: "/media/pilitas-front-ultrawide.png",
-    label: "Fachada principal",
-    number: "01",
-    width: 2880,
-    height: 1152,
-  },
-  rear: {
-    src: "/media/pilitas-rear-master.jpg",
-    label: "Fachada posterior",
-    number: "02",
-    width: 2048,
-    height: 1152,
-  },
-};
-
-type FacadeZone<Id extends string> = {
-  id: Id;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  clip: string;
-};
-
-type UnitZone = FacadeZone<UnitId>;
-type AmenityZone = FacadeZone<AmenityId>;
-
-type PixelPoint = readonly [x: number, y: number];
-
-const facadeReference = { width: 2048, height: 1152 } as const;
-
-function facadePolygon<Id extends string>(id: Id, points: readonly PixelPoint[]): FacadeZone<Id> {
-  const xs = points.map(([x]) => x);
-  const ys = points.map(([, y]) => y);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const width = maxX - minX;
-  const height = maxY - minY;
-
-  const clip = `polygon(${points
-    .map(([x, y]) => {
-      const relativeX = ((x - minX) / width) * 100;
-      const relativeY = ((y - minY) / height) * 100;
-      return `${relativeX.toFixed(2)}% ${relativeY.toFixed(2)}%`;
-    })
-    .join(", ")})`;
-
-  return {
-    id,
-    x: (minX / facadeReference.width) * 100,
-    y: (minY / facadeReference.height) * 100,
-    width: (width / facadeReference.width) * 100,
-    height: (height / facadeReference.height) * 100,
-    clip,
-  };
-}
-
-const hotspots: Record<ViewId, UnitZone[]> = {
-  front: [
-    // Traced from ARREGLAR BOTONEs.jpg against the untouched 2048 × 1152 facade.
-    // PH1 wraps both visible planes; PH2 is only the narrow right-hand volume.
-    facadePolygon("PH1", [[755, 289], [840, 268], [840, 278], [1114, 205], [1279, 280], [1278, 418], [1114, 379], [755, 436]]),
-    facadePolygon("PH2", [[1279, 280], [1395, 329], [1395, 447], [1278, 418]]),
-    facadePolygon("501", [[755, 436], [1114, 379], [1278, 418], [1275, 531], [1114, 509], [735, 525]]),
-    facadePolygon("502", [[1279, 418], [1395, 447], [1395, 549], [1279, 532]]),
-    facadePolygon("401", [[735, 544], [928, 527], [928, 648], [735, 648]]),
-    facadePolygon("402", [[928, 527], [1114, 509], [1275, 531], [1275, 647], [1114, 648], [928, 648]]),
-    facadePolygon("403", [[1279, 532], [1395, 549], [1395, 645], [1279, 647]]),
-    facadePolygon("301", [[735, 648], [928, 648], [928, 768], [735, 755]]),
-    facadePolygon("302", [[928, 648], [1114, 648], [1275, 647], [1275, 767], [1114, 786], [928, 768]]),
-    facadePolygon("303", [[1279, 647], [1395, 645], [1395, 752], [1279, 767]]),
-    facadePolygon("201", [[735, 755], [928, 768], [928, 876], [735, 848]]),
-    facadePolygon("202", [[928, 768], [1114, 786], [1275, 767], [1275, 865], [1114, 907], [928, 876]]),
-    facadePolygon("203", [[1279, 767], [1395, 752], [1395, 833], [1279, 865]]),
-  ],
-  rear: [
-    // Traced from BOTONES CORREGIDOS.jpg against the 2048 × 1152 rear facade.
-    // The colors in the guide are ignored; only their architectural boundaries are used.
-    facadePolygon("PH1", [[743, 462], [816, 345], [816, 454], [743, 550]]),
-    facadePolygon("PH2", [[816, 345], [926, 160], [1353, 371], [1353, 479], [931, 312], [816, 454]]),
-    facadePolygon("501", [[743, 550], [816, 454], [816, 558], [743, 632]]),
-    facadePolygon("502", [[816, 454], [931, 312], [1353, 479], [1353, 570], [927, 433], [816, 558]]),
-    facadePolygon("402", [[743, 632], [816, 558], [816, 659], [743, 718]]),
-    facadePolygon("403", [[816, 558], [927, 433], [1163, 510], [1163, 623], [926, 568], [816, 659]]),
-    facadePolygon("404", [[1163, 510], [1353, 570], [1353, 670], [1163, 623]]),
-    facadePolygon("302", [[743, 718], [816, 659], [816, 754], [743, 796]]),
-    facadePolygon("303", [[816, 659], [926, 568], [1163, 623], [1163, 730], [925, 693], [816, 754]]),
-    facadePolygon("304", [[1163, 623], [1353, 670], [1353, 763], [1163, 730]]),
-    facadePolygon("202", [[743, 796], [816, 754], [816, 832], [743, 859]]),
-    facadePolygon("203", [[816, 754], [925, 693], [1163, 730], [1163, 811], [925, 790], [816, 832]]),
-    facadePolygon("204", [[1163, 730], [1353, 763], [1353, 810], [1163, 811]]),
-  ],
-};
-
-const amenityHotspots: Record<ViewId, AmenityZone[]> = {
-  front: [
-    // Traced from BOTON NUEVO ROOF FACHADA FRONTAL.png. The lower edge stops
-    // precisely at the roofline so the target never competes with PH1 or PH2.
-    facadePolygon("rooftop", [[756, 0], [1395, 0], [1395, 324], [1114, 201], [840, 273], [840, 263], [756, 286]]),
-    facadePolygon("lobby", [[734, 852], [932, 887], [932, 1019], [734, 961]]),
-  ],
-  rear: [
-    // Traced independently from NUEVO BOTON ROOF FACHADA POSTERIOR.png.
-    facadePolygon("rooftop", [[740, 0], [1352, 0], [1352, 366], [925, 156], [740, 459]]),
-  ],
-};
-
-const levels = [6, 5, 4, 3, 2];
-
-const copy = {
-  es: {
-    availableOf: "de 16 disponibles",
-    introAria: "Presentación del proyecto",
-    kicker: "Residencias frente al Pacífico",
-    introCopy: "Una mirada íntima a Puerto Vallarta, entre la montaña, la ciudad y el mar.",
-    explore: "Explorar residencias",
-    tapContinue: "Toca para ver cómo explorar",
-    tapExplore: "Toca para explorar las residencias",
-    projectTeam: "Equipo del proyecto",
-    projectBy: "Un proyecto de",
-    design: "Diseño",
-    development: "Desarrollo",
-    sales: "Comercialización",
-    guidesAria: "Cómo explorar el proyecto",
-    guideView: "Cambia de fachada aquí",
-    guideUnit: "Elige tu unidad en el edificio",
-    guideInventory: "Inventario completo abajo",
-    guideControls: "Idioma, moneda, mapa y planos aquí",
-    guideSwipe: "Desliza para cambiar de fachada o imagen",
-    front: "Fachada principal",
-    rear: "Fachada posterior",
-    viewRear: "Ver fachada posterior",
-    viewFront: "Volver a fachada principal",
-    hotspots: "Residencias y amenidades visibles en fachada",
-    amenity: "Amenidad",
-    amenityGallery: "Galería de",
-    previousImage: "Ver imagen anterior",
-    nextImage: "Ver imagen siguiente",
-    closeResidence: "Cerrar residencia",
-    dragResidence: "Arrastra para bajar o subir la ficha de la residencia",
-    level: "Nivel",
-    totalArea: "área total",
-    bedroom: "recámara",
-    bedrooms: "recámaras",
-    bathroom: "baño",
-    bathrooms: "baños",
-    listPrice: "Precio de lista",
-    exploreInterior: "Explorar interior",
-    viewPlan: "Ver plano",
-    viewTour: "Recorrido 360°",
-    askResidence: "Preguntar por esta residencia",
-    inventoryAria: "Inventario de residencias",
-    inventory: "Inventario",
-    residencesCount: "16 residencias",
-    presentation: "Presentación",
-    availabilityByLevel: "Disponibilidad por nivel",
-    selectResidence: "Selecciona una residencia para ubicarla en la fachada",
-    availabilitySummary: "Resumen de disponibilidad",
-    available: "disponibles",
-    reserved: "apartadas",
-    sold: "vendidas",
-    buildingFacts: "Datos generales del edificio",
-    residences: "residencias",
-    residentialLevels: "niveles residenciales",
-    poolRoof: "con alberca",
-    restaurant: "restaurante",
-    parking: "cajones",
-    inventoryNote: "Áreas según planos · precios y disponibilidad sincronizados con el inventario maestro",
-    salesAssistant: "Asistente de ventas",
-    answerQuestions: "Resuelve tus dudas",
-    availableNow: "Disponible ahora",
-    closeConcierge: "Cerrar concierge",
-    betterView: "Mejor vista",
-    compare: "Comparar 301 / 302",
-    payment: "Forma de pago",
-    writeQuestion: "Escribe tu pregunta…",
-    questionAria: "Pregunta para el asistente de ventas",
-    sendQuestion: "Enviar pregunta",
-    interiorsOf: "Interiores de",
-    planOf: "Plano de",
-    tourOf: "Recorrido 360° de",
-    planVersion: "Versión del plano",
-    color: "Color",
-    clean: "Sin cotas",
-    dimensions: "Con cotas",
-    backBuilding: "Volver al edificio",
-    residenceContent: "Contenido de la residencia",
-    interiors: "Interiores",
-    plan: "Plano",
-    tour: "Recorrido 360°",
-    closeInterior: "Cerrar interior",
-    previousInterior: "Ver imagen interior anterior",
-    nextInterior: "Ver imagen interior siguiente",
-    previousPlan: "Ver versión anterior del plano",
-    nextPlan: "Ver versión siguiente del plano",
-    referenceNotice: "Aviso sobre las imágenes de referencia",
-    referenceImage: "Imagen de referencia",
-    sameGeometry: "Misma geometría, vista de otro nivel",
-    tourReferenceNotice: "Aviso sobre el recorrido de referencia",
-    tourReference: "Recorrido de referencia",
-    sameTourGeometry: "Misma distribución, vista del nivel superior",
-    tourLoading: "Cargando recorrido 360°…",
-    requestReal: "Solicitar vista real",
-    understood: "Entendido",
-    languageLabel: "Cambiar a inglés",
-    currencyLabel: "Cambiar moneda",
-    mapLabel: "Ver ubicación en el mapa",
-    mapTitle: "Ubicación de Las Verandas",
-    mapDescription: "Olas Altas 601 · Zona Romántica · Puerto Vallarta",
-    mapAddress: "Olas Altas 601, Zona Romántica, Amapas, 48399 Puerto Vallarta, Jal.",
-    generalPlans: "Planos generales",
-    generalPlansShort: "Planos",
-    generalPlansAria: "Abrir planos generales del edificio",
-    chooseGeneralPlan: "Seleccionar nivel",
-    previousGeneralPlan: "Ver plano general anterior",
-    nextGeneralPlan: "Ver plano general siguiente",
-    closeGeneralPlans: "Cerrar planos generales",
-    generalPlanOf: "Plano general de",
-    swipeGeneralPlans: "Pellizca para ampliar · suelta para volver · desliza para cambiar de nivel",
-    zoomPlan: "Plano ampliable. Pellizca con dos dedos para acercar o alejar; al soltar vuelve suavemente al encuadre y un doble toque lo restablece por completo.",
-    zoomPlanHint: "Pellizca para ampliar · suelta o toca dos veces para volver",
-    zoomImage: "Imagen ampliable. Pellizca con dos dedos para verla de cerca; al soltar vuelve suavemente al encuadre y un doble toque la restablece por completo.",
-    zoomImageHint: "Pellizca para ampliar · suelta o toca dos veces para volver",
-    downloadPlan: "Descargar plano",
-    brandHome: "Volver a la presentación e instrucciones",
-  },
-  en: {
-    availableOf: "of 16 available",
-    introAria: "Project presentation",
-    kicker: "Residences overlooking the Pacific",
-    introCopy: "An intimate look at Puerto Vallarta, between the mountains, the city, and the sea.",
-    explore: "Explore residences",
-    tapContinue: "Tap to see how to explore",
-    tapExplore: "Tap to explore the residences",
-    projectTeam: "Project team",
-    projectBy: "A project by",
-    design: "Design",
-    development: "Development",
-    sales: "Sales",
-    guidesAria: "How to explore the project",
-    guideView: "Switch façades here",
-    guideUnit: "Choose a residence on the building",
-    guideInventory: "Full inventory below",
-    guideControls: "Language, currency, map and plans here",
-    guideSwipe: "Swipe to change façade or image",
-    front: "Main façade",
-    rear: "Rear façade",
-    viewRear: "View rear façade",
-    viewFront: "Return to main façade",
-    hotspots: "Residences and amenities visible on the façade",
-    amenity: "Amenity",
-    amenityGallery: "Gallery of",
-    previousImage: "View previous image",
-    nextImage: "View next image",
-    closeResidence: "Close residence",
-    dragResidence: "Drag to lower or raise the residence details",
-    level: "Level",
-    totalArea: "total area",
-    bedroom: "bedroom",
-    bedrooms: "bedrooms",
-    bathroom: "bathroom",
-    bathrooms: "bathrooms",
-    listPrice: "List price",
-    exploreInterior: "Explore interior",
-    viewPlan: "View floor plan",
-    viewTour: "360° tour",
-    askResidence: "Ask about this residence",
-    inventoryAria: "Residence inventory",
-    inventory: "Inventory",
-    residencesCount: "16 residences",
-    presentation: "Presentation",
-    availabilityByLevel: "Availability by level",
-    selectResidence: "Select a residence to locate it on the façade",
-    availabilitySummary: "Availability summary",
-    available: "available",
-    reserved: "reserved",
-    sold: "sold",
-    buildingFacts: "Building overview",
-    residences: "residences",
-    residentialLevels: "residential levels",
-    poolRoof: "with pool",
-    restaurant: "restaurant",
-    parking: "parking spaces",
-    inventoryNote: "Areas per floor plans · prices and availability synced with the master inventory",
-    salesAssistant: "Sales assistant",
-    answerQuestions: "Ask me anything",
-    availableNow: "Available now",
-    closeConcierge: "Close concierge",
-    betterView: "Best view",
-    compare: "Compare 301 / 302",
-    payment: "Payment options",
-    writeQuestion: "Type your question…",
-    questionAria: "Question for the sales assistant",
-    sendQuestion: "Send question",
-    interiorsOf: "Interiors of",
-    planOf: "Floor plan of",
-    tourOf: "360° tour of",
-    planVersion: "Floor plan version",
-    color: "Color",
-    clean: "No dimensions",
-    dimensions: "With dimensions",
-    backBuilding: "Back to building",
-    residenceContent: "Residence content",
-    interiors: "Interiors",
-    plan: "Floor plan",
-    tour: "360° tour",
-    closeInterior: "Close interior",
-    previousInterior: "View previous interior image",
-    nextInterior: "View next interior image",
-    previousPlan: "View previous floor plan version",
-    nextPlan: "View next floor plan version",
-    referenceNotice: "Reference image notice",
-    referenceImage: "Reference image",
-    sameGeometry: "Same layout, view from another level",
-    tourReferenceNotice: "Reference tour notice",
-    tourReference: "Reference tour",
-    sameTourGeometry: "Same layout, view from the upper level",
-    tourLoading: "Loading 360° tour…",
-    requestReal: "Request actual view",
-    understood: "Got it",
-    languageLabel: "Switch to Spanish",
-    currencyLabel: "Switch currency",
-    mapLabel: "View location on the map",
-    mapTitle: "Las Verandas location",
-    mapDescription: "Olas Altas 601 · Romantic Zone · Puerto Vallarta",
-    mapAddress: "Olas Altas 601, Romantic Zone, Amapas, 48399 Puerto Vallarta, Jalisco",
-    generalPlans: "General floor plans",
-    generalPlansShort: "Plans",
-    generalPlansAria: "Open general building floor plans",
-    chooseGeneralPlan: "Select level",
-    previousGeneralPlan: "View previous general floor plan",
-    nextGeneralPlan: "View next general floor plan",
-    closeGeneralPlans: "Close general floor plans",
-    generalPlanOf: "General floor plan of",
-    swipeGeneralPlans: "Pinch to zoom · release to return · swipe to change levels",
-    zoomPlan: "Zoomable plan. Pinch with two fingers to inspect it; release to return smoothly to the full view, or double-tap to reset completely.",
-    zoomPlanHint: "Pinch to zoom · release or double-tap to return",
-    zoomImage: "Zoomable image. Pinch with two fingers to inspect it; release to return smoothly to the full view, or double-tap to reset completely.",
-    zoomImageHint: "Pinch to zoom · release or double-tap to return",
-    downloadPlan: "Download plan",
-    brandHome: "Return to the presentation and instructions",
-  },
-} as const;
-
-function residenceName(unit: Residence, language: Language) {
-  if (unit.id.startsWith("PH")) return `Penthouse ${unit.id}`;
-  return `${language === "es" ? "Residencia" : "Residence"} ${unit.id}`;
-}
-
-function residenceEyebrow(unit: Residence, language: Language) {
-  if (language === "es") return unit.beds === 1 ? "Una recámara" : "Dos recámaras";
-  return unit.beds === 1 ? "One bedroom" : "Two bedrooms";
-}
-
-function residenceDescription(unit: Residence, language: Language) {
-  if (unit.id.startsWith("PH")) {
-    return language === "es"
-      ? "Penthouse de dos recámaras y dos baños en el nivel superior, debajo del roof con alberca."
-      : "Two-bedroom, two-bathroom penthouse on the upper level, directly below the rooftop pool.";
-  }
-  return language === "es"
-    ? `Residencia de ${unit.beds === 1 ? "una recámara" : "dos recámaras"} con ${unit.area.toFixed(2)} m² de área total en el nivel ${unit.level}.`
-    : `${unit.beds === 1 ? "One-bedroom residence" : "Two-bedroom residence"} with ${unit.area.toFixed(2)} m² of total area on level ${unit.level}.`;
-}
-
-function formatPrice(valueUsd: number, currency: Currency, mxnPerUsd: number, language: Language) {
-  const value = currency === "MXN" ? valueUsd * mxnPerUsd : valueUsd;
-  return `$${new Intl.NumberFormat(language === "es" ? "es-MX" : "en-US", {
-    maximumFractionDigits: 0,
-  }).format(value)} ${currency}`;
-}
-
-function statusLabel(status: UnitStatus, language: Language) {
-  if (language === "es") return status;
-  if (status === "Apartada") return "Reserved";
-  if (status === "Vendida") return "Sold";
-  return "Available";
-}
-
-function statusClass(status: UnitStatus) {
-  if (status === "Apartada") return "is-reserved";
-  if (status === "Vendida") return "is-sold";
-  return "is-available";
-}
+import { planViews, MOBILE_GESTURE_MEDIA } from "@/lib/pilitas/types";
+import type { UnitId, ViewId, AmenityId, Language, Currency, ExperienceView, PlanView, TouchIntroStep } from "@/lib/pilitas/types";
+import { amenities, generalPlans, virtualTours, renderSourceByUnit, floorPlanFor, renderSourceLabel, facades, hotspots, amenityHotspots, levels } from "@/lib/pilitas/catalog";
+import { copy } from "@/lib/pilitas/i18n";
+import { residenceName, residenceEyebrow, residenceDescription, formatPrice, statusLabel, statusClass } from "@/lib/pilitas/format";
+import { ZoomablePlan } from "@/components/pilitas/zoomable-plan";
+import { useInventory } from "@/hooks/use-inventory";
+import { answerQuestion } from "@/lib/pilitas/assistant";
+import { whatsappUrl } from "@/lib/pilitas/contact";
 
 type ChatItem = { author: "concierge" | "visitor"; text: string };
 type SwipeOrigin = { pointerId: number; x: number; y: number } | null;
@@ -924,11 +51,6 @@ type RevealDragOrigin = {
   startOffset: number;
   moved: boolean;
 } | null;
-type InventoryPayload = {
-  units: Array<{ id: UnitId; price: number; status: UnitStatus }>;
-  mxnPerUsd: number;
-  refreshMinutes?: number;
-};
 
 export default function Home() {
   const interiorDialogRef = useRef<HTMLDialogElement>(null);
@@ -940,8 +62,7 @@ export default function Home() {
   const suppressSceneClickRef = useRef(false);
   const [language, setLanguage] = useState<Language>("es");
   const [currency, setCurrency] = useState<Currency>("MXN");
-  const [mxnPerUsd, setMxnPerUsd] = useState(17.0427);
-  const [residences, setResidences] = useState<Residence[]>(initialResidences);
+  const { residences, mxnPerUsd, syncStatus, updatedAt, contacts } = useInventory();
   const [view, setView] = useState<ViewId>("front");
   const [exploring, setExploring] = useState(false);
   const [touchIntroStep, setTouchIntroStep] = useState<TouchIntroStep>("presentation");
@@ -984,39 +105,6 @@ export default function Home() {
     : null;
 
   const availableCount = residences.filter((unit) => unit.status === "Disponible").length;
-  const reservedCount = residences.filter((unit) => unit.status === "Apartada").length;
-  const soldCount = residences.filter((unit) => unit.status === "Vendida").length;
-
-  useEffect(() => {
-    let cancelled = false;
-    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
-
-    async function syncInventory() {
-      let refreshMinutes = 5;
-      try {
-        const response = await fetch("/api/inventory", { cache: "no-store" });
-        if (!response.ok) throw new Error("Inventory source unavailable");
-        const payload = await response.json() as InventoryPayload;
-        refreshMinutes = Math.max(1, payload.refreshMinutes ?? 5);
-        if (cancelled) return;
-        setMxnPerUsd(payload.mxnPerUsd);
-        setResidences((current) => current.map((unit) => {
-          const update = payload.units.find((item) => item.id === unit.id);
-          return update ? { ...unit, price: update.price, status: update.status } : unit;
-        }));
-      } catch {
-        // The embedded inventory remains usable if the published Sheet is unavailable.
-      } finally {
-        if (!cancelled) refreshTimer = setTimeout(syncInventory, refreshMinutes * 60_000);
-      }
-    }
-
-    void syncInventory();
-    return () => {
-      cancelled = true;
-      if (refreshTimer) clearTimeout(refreshTimer);
-    };
-  }, []);
 
   useEffect(() => {
     const dialog = interiorDialogRef.current;
@@ -1112,15 +200,7 @@ export default function Home() {
   }
 
   function toggleLanguage() {
-    const nextLanguage: Language = language === "es" ? "en" : "es";
-    setLanguage(nextLanguage);
-    setCurrency(nextLanguage === "es" ? "MXN" : "USD");
-    setChat([{
-      author: "concierge",
-      text: nextLanguage === "es"
-        ? "Bienvenido a Las Verandas de Olas Altas. Puedo ayudarte a elegir una residencia sin sacarte de la experiencia."
-        : "Welcome to Las Verandas de Olas Altas. I can help you choose a residence without taking you out of the experience.",
-    }]);
+    setLanguage((current) => current === "es" ? "en" : "es");
   }
 
   function returnToPresentation() {
@@ -1351,57 +431,13 @@ export default function Home() {
     if (direction) changeGeneralPlan(direction);
   }
 
-  function answerFor(raw: string) {
-    const text = raw.toLowerCase();
-    if (text.includes("dron") || text.includes("vista real") || text.includes("fotografía real") || text.includes("actual view") || text.includes("real photo")) {
-      const name = selected ? residenceName(selected, language) : language === "es" ? "la residencia que elijas" : "the residence you choose";
-      return language === "es"
-        ? `Podemos coordinar una fotografía de dron desde la altura y orientación aproximadas de ${name}. Agenda una cita con nuestro asesor de ventas para preparar la vista real de esa unidad.`
-        : `We can coordinate a drone photograph from the approximate height and orientation of ${name}. Schedule an appointment with our sales advisor so the team can prepare that residence's actual view.`;
-    }
-    if (text.includes("compar")) {
-      const unit301 = residences.find((unit) => unit.id === "301")!;
-      const unit302 = residences.find((unit) => unit.id === "302")!;
-      return language === "es"
-        ? `La 301 tiene 76.90 m² y precio de ${formatPrice(unit301.price, currency, mxnPerUsd, language)}; la 302 aumenta a 89.28 m² y ${formatPrice(unit302.price, currency, mxnPerUsd, language)}. La 301 está ${statusLabel(unit301.status, language).toLowerCase()} y la 302 ${statusLabel(unit302.status, language).toLowerCase()}.`
-        : `Residence 301 has 76.90 m² and is listed at ${formatPrice(unit301.price, currency, mxnPerUsd, language)}; 302 increases to 89.28 m² and ${formatPrice(unit302.price, currency, mxnPerUsd, language)}. Residence 301 is ${statusLabel(unit301.status, language).toLowerCase()} and 302 is ${statusLabel(unit302.status, language).toLowerCase()}.`;
-    }
-    if (text.includes("vista") || text.includes("mar") || text.includes("atardecer") || text.includes("view") || text.includes("ocean") || text.includes("sunset")) {
-      const ph1 = residences.find((unit) => unit.id === "PH1")!;
-      return language === "es"
-        ? `Los penthouses PH1 y PH2 ocupan el nivel más alto, justo debajo del roof con alberca. PH1 está ${statusLabel(ph1.status, language).toLowerCase()} en el inventario actual.`
-        : `Penthouses PH1 and PH2 occupy the highest level, directly below the rooftop pool. PH1 is currently ${statusLabel(ph1.status, language).toLowerCase()}.`;
-    }
-    if (text.includes("pago") || text.includes("enganche") || text.includes("aparta") || text.includes("payment") || text.includes("deposit") || text.includes("reserve")) {
-      return language === "es"
-        ? "El material recibido no especifica el esquema de pago. Puedo ayudarte a solicitar el plan comercial correspondiente a la residencia que elijas."
-        : "The supplied materials do not specify a payment schedule. I can help you request the commercial plan for the residence you choose.";
-    }
-    if (text.includes("precio") || text.includes("presupuesto") || text.includes("price") || text.includes("budget")) {
-      const prices = residences.map((unit) => unit.price);
-      const available = residences.filter((unit) => unit.status === "Disponible").sort((a, b) => a.price - b.price)[0]
-        ?? residences.slice().sort((a, b) => a.price - b.price)[0];
-      return language === "es"
-        ? `Los precios van de ${formatPrice(Math.min(...prices), currency, mxnPerUsd, language)} a ${formatPrice(Math.max(...prices), currency, mxnPerUsd, language)}. Entre las disponibles, ${residenceName(available, language)} inicia en ${formatPrice(available.price, currency, mxnPerUsd, language)}.`
-        : `Prices range from ${formatPrice(Math.min(...prices), currency, mxnPerUsd, language)} to ${formatPrice(Math.max(...prices), currency, mxnPerUsd, language)}. Among the available residences, ${residenceName(available, language)} starts at ${formatPrice(available.price, currency, mxnPerUsd, language)}.`;
-    }
-    if (selected) {
-      return language === "es"
-        ? `${residenceName(selected, language)}: ${selected.area.toFixed(2)} m², ${selected.beds} ${selected.beds === 1 ? t.bedroom : t.bedrooms}, ${selected.baths} ${selected.baths === 1 ? t.bathroom : t.bathrooms} y precio de ${formatPrice(selected.price, currency, mxnPerUsd, language)}. Estado: ${statusLabel(selected.status, language)}.`
-        : `${residenceName(selected, language)}: ${selected.area.toFixed(2)} m², ${selected.beds} ${selected.beds === 1 ? t.bedroom : t.bedrooms}, ${selected.baths} ${selected.baths === 1 ? t.bathroom : t.bathrooms}, listed at ${formatPrice(selected.price, currency, mxnPerUsd, language)}. Status: ${statusLabel(selected.status, language)}.`;
-    }
-    return language === "es"
-      ? `El edificio integra 16 residencias: ${availableCount} disponibles, ${reservedCount} apartadas y ${soldCount} vendidas. Puedo buscar por presupuesto, nivel o disponibilidad.`
-      : `The building includes 16 residences: ${availableCount} available, ${reservedCount} reserved, and ${soldCount} sold. I can search by budget, level, or availability.`;
-  }
-
   function ask(raw: string) {
-    const clean = raw.trim();
+    const clean = raw.trim().slice(0, 1000);
     if (!clean) return;
     setChat((items) => [
-      ...items,
+      ...items.slice(-38),
       { author: "visitor", text: clean },
-      { author: "concierge", text: answerFor(clean) },
+      { author: "concierge", text: answerQuestion(clean, { residences, selectedId, language, currency, mxnPerUsd, isCurrent: syncStatus === "synced" }) },
     ]);
     setMessage("");
     setConciergeOpen(true);
@@ -1614,9 +650,9 @@ export default function Home() {
               <Layers3 />
               <strong>{t.generalPlansShort}</strong>
             </button>
-            <div className="header-availability">
+            <div className={`header-availability inventory-sync-${syncStatus}`} role="status" title={syncStatus === "synced" ? (language === "es" ? "Inventario actualizado" : "Inventory updated") : (language === "es" ? "Datos sin verificar: confirma con ventas" : "Unverified data: confirm with sales")}>
               <i />
-              <span><strong>{String(availableCount).padStart(2, "0")}</strong> {t.availableOf}</span>
+              <span>{syncStatus === "synced" ? <><strong>{String(availableCount).padStart(2, "0")}</strong> {t.availableOf}</> : (language === "es" ? "Inventario por confirmar" : "Inventory unverified")}</span>
             </div>
           </div>
         </header>
@@ -1895,7 +931,11 @@ export default function Home() {
             </div>
 
             <span className="inventory-note">
-              {t.inventoryNote}
+              {syncStatus === "synced"
+                ? `${language === "es" ? "Inventario actualizado" : "Inventory updated"} · ${updatedAt ? new Date(updatedAt).toLocaleTimeString(language === "es" ? "es-MX" : "en-US") : ""}`
+                : syncStatus === "loading"
+                  ? (language === "es" ? "Consultando inventario · datos de respaldo" : "Checking inventory · backup data")
+                  : (language === "es" ? "Sin conexión al inventario · confirma precios y disponibilidad con ventas" : "Inventory unavailable · confirm prices and availability with sales")}
             </span>
           </div>
         </nav>
@@ -1917,7 +957,7 @@ export default function Home() {
           <aside className="cinematic-concierge" aria-label={t.salesAssistant}>
             <div className="concierge-top">
               <span><Sparkles /></span>
-              <div><strong>{t.salesAssistant}</strong><small><i /> {t.availableNow}</small></div>
+              <div><strong>{t.salesAssistant}</strong><small>{language === "es" ? "Asistente automático · no envía solicitudes" : "Automated assistant · requests are not sent"}</small></div>
               <button type="button" onClick={() => setConciergeOpen(false)} aria-label={t.closeConcierge}><X /></button>
             </div>
             <div className="concierge-log" aria-live="polite">
@@ -1927,6 +967,11 @@ export default function Home() {
                 </p>
               ))}
             </div>
+            <div className="sales-contacts" aria-label={language === "es" ? "Contactar a ventas" : "Contact sales"}>
+              <a className="sales-contact" href={whatsappUrl(contacts, language === "es" ? `Hola, me interesa ${selected ? residenceName(selected, language) : "Las Verandas de Olas Altas"}. Quisiera confirmar disponibilidad y agendar una visita.` : `Hello, I am interested in ${selected ? residenceName(selected, language) : "Las Verandas de Olas Altas"}. Please confirm availability and help me arrange a visit.`)} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+              <a className="sales-contact" href={`mailto:${contacts.email}`}>{language === "es" ? "Correo" : "Email"}</a>
+              {contacts.bookingUrl && <a className="sales-contact" href={contacts.bookingUrl} target="_blank" rel="noopener noreferrer">{language === "es" ? "Agendar cita" : "Book a visit"}</a>}
+            </div>
             <div className="concierge-prompts">
               <button type="button" onClick={() => ask(language === "es" ? "¿Cuál tiene mejor vista?" : "Which residence has the best view?")}>{t.betterView}</button>
               <button type="button" onClick={() => ask(language === "es" ? "Compara 301 y 302" : "Compare 301 and 302")}>{t.compare}</button>
@@ -1935,6 +980,7 @@ export default function Home() {
             <form onSubmit={submitQuestion} className="concierge-input">
               <MessageCircle />
               <input
+                maxLength={1000}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 placeholder={t.writeQuestion}
@@ -1958,7 +1004,7 @@ export default function Home() {
         onClose={closeExperience}
         onCancel={closeExperience}
       >
-        {(selected || selectedAmenity) && (
+        {interiorOpen && (selected || selectedAmenity) && (
           <>
             <div
               className="interior-stage"
