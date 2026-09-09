@@ -11,6 +11,7 @@ const {answerQuestion} = await vite.ssrLoadModule("/lib/pilitas/assistant.ts");
 const {initialResidences} = await vite.ssrLoadModule("/lib/pilitas/catalog.ts");
 const {contactConfig, whatsappUrl} = await vite.ssrLoadModule("/lib/pilitas/contact.ts");
 const {formatPrice} = await vite.ssrLoadModule("/lib/pilitas/format.ts");
+const {askRemoteAssistant} = await vite.ssrLoadModule("/lib/pilitas/remote-assistant.ts");
 const csv = "unidad,precio base en USD,estado\n" + UNIT_IDS.map(id => `${id},423500,Disponible`).join("\n");
 const settings = "clave,valor\nmxn_por_usd,17.0427\nactualizar_cada_minutos,5";
 const valid = () => inventoryFromCsv(csv, settings, "2026-09-09T12:00:00Z");
@@ -71,4 +72,19 @@ test("budget and currency filtering work and stale data is labelled", () => {
   assert.match(answerQuestion("budget of 450000 USD",{...ctx,language:"en"}),/Residence 201/);
   assert.match(answerQuestion("precio",{...ctx,isCurrent:false}),/confirma precios y disponibilidad/);
   assert.equal(formatPrice(100,"MXN",17,"es"),"$1,700 MXN");
+});
+test("optional AI endpoint accepts safe answers and fails back without exposing a key", async () => {
+  let request;
+  const answer = await askRemoteAssistant("Compara 401 y PH1", ctx, {
+    url: "https://api.example.com/sales",
+    fetcher: async (_url, options) => {
+      request = JSON.parse(options.body);
+      return Response.json({answer: "Respuesta remota"});
+    },
+  });
+  assert.equal(answer, "Respuesta remota");
+  assert.equal(request.selectedUnit, null);
+  assert.equal(request.residences.length, 16);
+  assert.equal(await askRemoteAssistant("hola", ctx, {url: "http://insecure.example.com"}), null);
+  assert.equal(await askRemoteAssistant("hola", ctx, {url: ""}), null);
 });

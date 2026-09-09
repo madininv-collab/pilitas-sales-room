@@ -29,7 +29,8 @@ try {
   } else if (command === "dev") await run([tool("vite"), "--host", "127.0.0.1"], 0);
   else if (command === "start") await run([tool("vinext"), "start"], 0);
   else if (command === "build") await run([tool("vinext"), "build"]);
-  else if (command === "lint") await run([tool("eslint"), ".", "--ignore-pattern", "dist", "--ignore-pattern", ".next", "--ignore-pattern", ".wrangler", "--ignore-pattern", ".sites-runtime"]);
+  else if (command === "build:pages") await run([tool("vite"), "build", "--config", "vite.pages.config.ts"]);
+  else if (command === "lint") await run([tool("eslint"), ".", "--ignore-pattern", "dist", "--ignore-pattern", "dist-pages", "--ignore-pattern", ".next", "--ignore-pattern", ".wrangler", "--ignore-pattern", ".sites-runtime"]);
   else if (command === "typecheck") await run([tool("typescript", "tsc"), "--noEmit", "--incremental", "false"]);
   else if (command === "db:generate") await run([tool("drizzle-kit"), "generate"]);
   else if (command === "test") {

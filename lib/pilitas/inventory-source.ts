@@ -1,5 +1,5 @@
 import {inventoryFromCsv, type Inventory} from "./inventory";
-const DEFAULT_SPREADSHEET = "13iLBwV83HAcR2eZvbq2vKU--mhTVCBv0Fcfjkvw777w";
+import {DEFAULT_SPREADSHEET} from "./inventory-config";
 const MAX_BYTES = 256 * 1024;
 export function createInventoryLoader({fetcher = fetch, now = Date.now, timeoutMs = 8000, spreadsheetId = DEFAULT_SPREADSHEET} = {}) {
   let cached: Inventory | undefined;
@@ -44,4 +44,3 @@ export function createInventoryLoader({fetcher = fetch, now = Date.now, timeoutM
   };
 }
 export const loadInventory = createInventoryLoader({spreadsheetId: process.env.INVENTORY_SPREADSHEET_ID || DEFAULT_SPREADSHEET});
-

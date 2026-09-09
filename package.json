@@ -9,6 +9,7 @@
     "install:ci": "node scripts/run.mjs install:ci",
     "dev": "node scripts/run.mjs dev",
     "build": "node scripts/run.mjs build",
+    "build:pages": "node scripts/run.mjs build:pages",
     "start": "node scripts/run.mjs start",
     "test": "node scripts/run.mjs test",
     "lint": "node scripts/run.mjs lint",

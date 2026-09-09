@@ -41,7 +41,9 @@ import { residenceName, residenceEyebrow, residenceDescription, formatPrice, sta
 import { ZoomablePlan } from "@/components/pilitas/zoomable-plan";
 import { useInventory } from "@/hooks/use-inventory";
 import { answerQuestion } from "@/lib/pilitas/assistant";
+import { askRemoteAssistant } from "@/lib/pilitas/remote-assistant";
 import { whatsappUrl } from "@/lib/pilitas/contact";
+import { assetPath } from "@/lib/pilitas/asset-path";
 
 type ChatItem = { author: "concierge" | "visitor"; text: string };
 type SwipeOrigin = { pointerId: number; x: number; y: number } | null;
@@ -431,16 +433,16 @@ export default function Home() {
     if (direction) changeGeneralPlan(direction);
   }
 
-  function ask(raw: string) {
+  async function ask(raw: string) {
     const clean = raw.trim().slice(0, 1000);
     if (!clean) return;
-    setChat((items) => [
-      ...items.slice(-38),
-      { author: "visitor", text: clean },
-      { author: "concierge", text: answerQuestion(clean, { residences, selectedId, language, currency, mxnPerUsd, isCurrent: syncStatus === "synced" }) },
-    ]);
+    const context = { residences, selectedId, language, currency, mxnPerUsd, isCurrent: syncStatus === "synced" };
+    setChat((items) => [...items.slice(-39), { author: "visitor", text: clean }]);
     setMessage("");
     setConciergeOpen(true);
+    const answer = await askRemoteAssistant(clean, context)
+      ?? answerQuestion(clean, context);
+    setChat((items) => [...items.slice(-39), { author: "concierge", text: answer }]);
   }
 
   function submitQuestion(event: FormEvent) {
@@ -500,7 +502,7 @@ export default function Home() {
             {Object.entries(facades).map(([key, facade]) => (
               <img
                 key={key}
-                src={facade.src}
+                src={assetPath(facade.src)}
                 alt=""
                 width={facade.width}
                 height={facade.height}
@@ -592,19 +594,19 @@ export default function Home() {
             onClick={returnToPresentation}
           >
             <span className="algo-monogram" aria-hidden="true">
-              <img src="/media/algo-arq-brand-symbol.png" alt="" width="119" height="119" decoding="async" />
+              <img src={assetPath("/media/algo-arq-brand-symbol.png")} alt="" width="119" height="119" decoding="async" />
             </span>
             <span className="algo-lockup" aria-hidden="true">
               <strong className="algo-brand-line algo-brand-line--top">
-                <img className="algo-brand-core" src="/media/algo-arq-brand-algo.png" alt="" width="200" height="51" decoding="async" />
+                <img className="algo-brand-core" src={assetPath("/media/algo-arq-brand-algo.png")} alt="" width="200" height="51" decoding="async" />
                 <span className="algo-brand-reveal algo-brand-reveal--ritmo">
-                  <img src="/media/algo-arq-brand-ritmo.png" alt="" width="193" height="41" decoding="async" />
+                  <img src={assetPath("/media/algo-arq-brand-ritmo.png")} alt="" width="193" height="41" decoding="async" />
                 </span>
               </strong>
               <strong className="algo-brand-line algo-brand-line--bottom">
-                <img className="algo-brand-core" src="/media/algo-arq-brand-arq.png" alt="" width="125" height="35" decoding="async" />
+                <img className="algo-brand-core" src={assetPath("/media/algo-arq-brand-arq.png")} alt="" width="125" height="35" decoding="async" />
                 <span className="algo-brand-reveal algo-brand-reveal--uitectonico">
-                  <img src="/media/algo-arq-brand-uitectonico.png" alt="" width="292" height="36" decoding="async" />
+                  <img src={assetPath("/media/algo-arq-brand-uitectonico.png")} alt="" width="292" height="36" decoding="async" />
                 </span>
               </strong>
               <small>Digital Sales Room</small>
@@ -669,7 +671,7 @@ export default function Home() {
             }}
           >
             <img
-              src="/media/las-verandas-logo.png"
+              src={assetPath("/media/las-verandas-logo.png")}
               alt="Las Verandas de Olas Altas — Playa Lifestyle Collection"
               className="hero-project-logo"
               width="1440"
@@ -692,7 +694,7 @@ export default function Home() {
               <div className="intro-project-credit">
                 <span>{t.design}</span>
                 <img
-                  src="/media/partner-arquimedia.png"
+                  src={assetPath("/media/partner-arquimedia.png")}
                   alt="Arquimedia"
                   className="credit-arquimedia"
                   width="249"
@@ -704,7 +706,7 @@ export default function Home() {
               <div className="intro-project-credit">
                 <span>{t.development}</span>
                 <img
-                  src="/media/partner-playa-lifestyle.png"
+                  src={assetPath("/media/partner-playa-lifestyle.png")}
                   alt="Playa Lifestyle"
                   className="credit-playa"
                   width="301"
@@ -716,7 +718,7 @@ export default function Home() {
               <div className="intro-project-credit">
                 <span>{t.sales}</span>
                 <img
-                  src="/media/partner-tropicasa.png"
+                  src={assetPath("/media/partner-tropicasa.png")}
                   alt="Tropicasa Realty"
                   className="credit-tropicasa"
                   width="528"
@@ -1020,7 +1022,7 @@ export default function Home() {
                       className={index === galleryIndex ? "interior-slide is-active" : "interior-slide"}
                     >
                       <img
-                        src={image}
+                        src={assetPath(image)}
                         alt=""
                         className="interior-backdrop"
                         aria-hidden="true"
@@ -1029,7 +1031,7 @@ export default function Home() {
                         decoding="async"
                       />
                       <ZoomablePlan
-                        src={image}
+                        src={assetPath(image)}
                         alt={index === galleryIndex ? `${activeExperienceName} · ${index + 1}` : ""}
                         interactionLabel={t.zoomImage}
                         imageClassName="interior-image"
@@ -1087,7 +1089,7 @@ export default function Home() {
                   <div className="floor-plan-canvas">
                     <ZoomablePlan
                       key={floorPlanFor(selected.id, planView)}
-                      src={floorPlanFor(selected.id, planView)}
+                      src={assetPath(floorPlanFor(selected.id, planView))}
                       alt={`${language === "es"
                         ? planView === "color" ? "Plano amueblado a color" : planView === "clean" ? "Plano sin cotas" : "Plano con cotas"
                         : planView === "color" ? "Color furnished floor plan" : planView === "clean" ? "Floor plan without dimensions" : "Floor plan with dimensions"} ${language === "es" ? "de" : "of"} ${residenceName(selected, language)}`}
@@ -1289,7 +1291,7 @@ export default function Home() {
             >
               <ZoomablePlan
                 key={`${plan.id}-${index === generalPlanIndex ? "active" : "inactive"}`}
-                src={plan.src}
+                src={assetPath(plan.src)}
                 alt={index === generalPlanIndex ? `${t.generalPlanOf} ${plan.label[language]}` : ""}
                 interactionLabel={t.zoomPlan}
                 imageClassName="general-plan-image"
