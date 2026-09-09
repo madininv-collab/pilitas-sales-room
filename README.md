@@ -17,7 +17,7 @@ npm audit
 
 ## Publicación en GitHub Pages
 
-El flujo `.github/workflows/pages.yml` compila y publica automáticamente cada cambio enviado a `main`. En GitHub abre **Settings → Pages → Build and deployment** y selecciona **GitHub Actions** como fuente. La dirección predeterminada será:
+El flujo `.github/workflows/pages.yml` habilita Pages, compila y publica automáticamente cada cambio enviado a `main`. La dirección predeterminada será:
 
 `https://madininv-collab.github.io/pilitas-sales-room/`
 

@@ -6,12 +6,12 @@ Archivos fuente y recursos del repositorio tras las correcciones. Excluye este m
 RUTA	BYTES
 .env.example	482
 .gitattributes	66
-.github/workflows/pages.yml	1288
+.github/workflows/pages.yml	1329
 .gitignore	525
 .npmrc	76
 .openai/hosting.json	91
 README.ORIGINAL.md	5703
-README.md	6093
+README.md	6001
 app/api/inventory/route.ts	456
 app/chatgpt-auth.ts	2404
 app/globals.css	99614
