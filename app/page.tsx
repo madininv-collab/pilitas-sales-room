@@ -44,6 +44,7 @@ import { answerQuestion } from "@/lib/pilitas/assistant";
 import { askRemoteAssistant } from "@/lib/pilitas/remote-assistant";
 import { whatsappUrl } from "@/lib/pilitas/contact";
 import { assetPath } from "@/lib/pilitas/asset-path";
+import { DevDiagnosticPanel } from "@/components/pilitas/dev-diagnostic-panel";
 
 type ChatItem = { author: "concierge" | "visitor"; text: string };
 type SwipeOrigin = { pointerId: number; x: number; y: number } | null;
@@ -1379,6 +1380,7 @@ export default function Home() {
         </div>
         <address className="location-dialog-address"><MapPin /> {t.mapAddress}</address>
       </DialogContent>
+      <DevDiagnosticPanel selectedUnitId={selectedId} />
     </main>
     </Dialog>
   );
