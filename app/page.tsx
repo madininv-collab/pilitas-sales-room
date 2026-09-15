@@ -40,10 +40,9 @@ import { copy } from "@/lib/pilitas/i18n";
 import { residenceName, residenceEyebrow, residenceDescription, formatPrice, statusLabel, statusClass } from "@/lib/pilitas/format";
 import { ZoomablePlan } from "@/components/pilitas/zoomable-plan";
 import { useInventory } from "@/hooks/use-inventory";
-import { answerQuestion } from "@/lib/pilitas/assistant";
-import { askRemoteAssistant } from "@/lib/pilitas/remote-assistant";
 import { whatsappUrl } from "@/lib/pilitas/contact";
 import { assetPath } from "@/lib/pilitas/asset-path";
+import { useConcierge } from "@/hooks/use-concierge";
 
 type ChatItem = { author: "concierge" | "visitor"; text: string };
 type SwipeOrigin = { pointerId: number; x: number; y: number } | null;
@@ -62,6 +61,7 @@ export default function Home() {
   const generalPlanSwipeOriginRef = useRef<SwipeOrigin>(null);
   const revealDragOriginRef = useRef<RevealDragOrigin>(null);
   const suppressSceneClickRef = useRef(false);
+  const conciergeRef = useRef<ReturnType<typeof useConcierge> | null>(null);
   const [language, setLanguage] = useState<Language>("es");
   const [currency, setCurrency] = useState<Currency>("MXN");
   const { residences, mxnPerUsd, syncStatus, updatedAt, contacts } = useInventory();
@@ -163,6 +163,7 @@ export default function Home() {
     : undefined;
 
   function selectResidence(id: UnitId) {
+    conciergeRef.current?.notifyManualNavigation();
     const visibleInCurrentView = hotspots[view].some((zone) => zone.id === id);
     if (!visibleInCurrentView) {
       setView(view === "front" ? "rear" : "front");
@@ -196,6 +197,7 @@ export default function Home() {
   }
 
   function changeView(next: ViewId) {
+    conciergeRef.current?.notifyManualNavigation();
     setSelectedId(null);
     setSelectedAmenityId(null);
     setView(next);
@@ -214,6 +216,7 @@ export default function Home() {
   }
 
   function openAmenity(id: AmenityId) {
+    conciergeRef.current?.notifyManualNavigation();
     setSelectedId(null);
     setSelectedAmenityId(id);
     setExploring(true);
@@ -230,6 +233,7 @@ export default function Home() {
   }
 
   function openGeneralPlans() {
+    conciergeRef.current?.notifyManualNavigation();
     setInventoryOpen(false);
     setMapOpen(false);
     setGeneralPlanIndex(0);
@@ -433,16 +437,72 @@ export default function Home() {
     if (direction) changeGeneralPlan(direction);
   }
 
+  const concierge = useConcierge({
+    residences,
+    selectedId,
+    view,
+    exploring,
+    inventoryOpen,
+    interiorOpen,
+    experienceView,
+    selectedAmenityId,
+    generalPlansOpen,
+    generalPlanIndex,
+    totalGeneralPlans: generalPlans.length,
+    language,
+    currency,
+    mxnPerUsd,
+    syncStatus,
+    updatedAt,
+    selectResidence: (id) => {
+      selectResidence(id);
+    },
+    setFacade: (facade) => {
+      setView(facade);
+    },
+    openInventory: () => setInventoryOpen(true),
+    closeInventory: () => setInventoryOpen(false),
+    openFloorPlan: (id) => {
+      const visibleInCurrentView = hotspots[view].some((zone) => zone.id === id);
+      if (!visibleInCurrentView) {
+        setView(view === "front" ? "rear" : "front");
+      }
+      setSelectedId(id);
+      setSelectedAmenityId(null);
+      setPlanView("color");
+      setRenderNoticeVisible(true);
+      setExperienceView("plan");
+      setInteriorOpen(true);
+      setExploring(true);
+      setInventoryOpen(false);
+    },
+    closeExperience,
+    showAmenity: openAmenity,
+    openTour: (id) => {
+      setSelectedId(id);
+      setSelectedAmenityId(null);
+      setRenderNoticeVisible(true);
+      setExperienceView("tour");
+      setInteriorOpen(true);
+      setExploring(true);
+      setInventoryOpen(false);
+    },
+    setLanguage,
+    setCurrency,
+    appendChatMessage: (author, text) => {
+      setChat((items) => [...items.slice(-39), { author, text }]);
+    },
+  });
+  useEffect(() => {
+    conciergeRef.current = concierge;
+  }, [concierge]);
+
   async function ask(raw: string) {
     const clean = raw.trim().slice(0, 1000);
     if (!clean) return;
-    const context = { residences, selectedId, language, currency, mxnPerUsd, isCurrent: syncStatus === "synced" };
-    setChat((items) => [...items.slice(-39), { author: "visitor", text: clean }]);
     setMessage("");
     setConciergeOpen(true);
-    const answer = await askRemoteAssistant(clean, context)
-      ?? answerQuestion(clean, context);
-    setChat((items) => [...items.slice(-39), { author: "concierge", text: answer }]);
+    await concierge.ask(clean);
   }
 
   function submitQuestion(event: FormEvent) {
@@ -974,7 +1034,37 @@ export default function Home() {
               <a className="sales-contact" href={`mailto:${contacts.email}`}>{language === "es" ? "Correo" : "Email"}</a>
               {contacts.bookingUrl && <a className="sales-contact" href={contacts.bookingUrl} target="_blank" rel="noopener noreferrer">{language === "es" ? "Agendar cita" : "Book a visit"}</a>}
             </div>
+            {concierge.directorStatus.state !== "idle" && (
+              <div className="presentation-status-bar" style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "8px 12px", background: "rgba(255, 255, 255, 0.05)", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.1)", margin: "0 16px 8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", opacity: 0.9 }}>
+                  <span><strong>{language === "es" ? "Presentación guiada" : "Guided Tour"}</strong> ({concierge.directorStatus.currentStepIndex + 1}/{concierge.directorStatus.totalSteps})</span>
+                  <span style={{ textTransform: "capitalize", opacity: 0.7 }}>{concierge.directorStatus.state}</span>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  {concierge.directorStatus.state === "presenting" ? (
+                    <button type="button" style={{ flex: 1, padding: "4px 8px", fontSize: "0.75rem", background: "rgba(255,255,255,0.1)", borderRadius: "4px", cursor: "pointer" }} onClick={concierge.pausePresentation}>
+                      {language === "es" ? "Pausar" : "Pause"}
+                    </button>
+                  ) : (
+                    <button type="button" style={{ flex: 1, padding: "4px 8px", fontSize: "0.75rem", background: "rgba(255,255,255,0.15)", borderRadius: "4px", cursor: "pointer" }} onClick={concierge.resumePresentation}>
+                      {language === "es" ? "Reanudar" : "Resume"}
+                    </button>
+                  )}
+                  <button type="button" style={{ flex: 1, padding: "4px 8px", fontSize: "0.75rem", background: "rgba(255,255,255,0.1)", borderRadius: "4px", cursor: "pointer" }} onClick={concierge.nextPresentationStep}>
+                    {language === "es" ? "Siguiente" : "Next"}
+                  </button>
+                  <button type="button" style={{ flex: 1, padding: "4px 8px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", borderRadius: "4px", cursor: "pointer" }} onClick={concierge.stopPresentation}>
+                    {language === "es" ? "Terminar" : "Stop"}
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="concierge-prompts">
+              {concierge.directorStatus.state === "idle" && (
+                <button type="button" onClick={() => concierge.startPresentation()}>
+                  {language === "es" ? "▶ Iniciar recorrido" : "▶ Start tour"}
+                </button>
+              )}
               <button type="button" onClick={() => ask(language === "es" ? "¿Cuál tiene mejor vista?" : "Which residence has the best view?")}>{t.betterView}</button>
               <button type="button" onClick={() => ask(language === "es" ? "Compara 301 y 302" : "Compare 301 and 302")}>{t.compare}</button>
               <button type="button" onClick={() => ask(language === "es" ? "¿Cuál es el esquema de pago?" : "What are the payment options?")}>{t.payment}</button>
