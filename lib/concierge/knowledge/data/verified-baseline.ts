@@ -1,0 +1,95 @@
+import type { KnowledgeItem } from "../types";
+
+export const VERIFIED_BASELINE_ITEMS: readonly KnowledgeItem[] = [
+  {
+    id: "V_LOC_01",
+    category: "identity_location",
+    topic: "Ubicación real y entorno",
+    status: "VERIFIED",
+    source: "catalog.ts & app/page.tsx",
+    confidence: 1.0,
+    lastUpdated: "2026-09-15",
+    content: {
+      es: "Las Verandas de Olas Altas se ubica en la calle Pilitas, en la emblemática Zona Romántica / Olas Altas de Puerto Vallarta, Jalisco, a unos pasos de la Playa Los Muertos.",
+      en: "Las Verandas de Olas Altas is located on Pilitas Street, in the iconic Romantic Zone / Olas Altas of Puerto Vallarta, Jalisco, steps from Los Muertos Beach.",
+    },
+  },
+  {
+    id: "V_INV_01",
+    category: "inventory_typologies",
+    topic: "Inventario y recámaras",
+    status: "VERIFIED",
+    source: "catalog.ts (initialResidences)",
+    confidence: 1.0,
+    lastUpdated: "2026-09-15",
+    content: {
+      es: "El desarrollo consta exactamente de 16 residencias distribuidas en 5 niveles residenciales (niveles 2 al 6). Cuenta exclusivamente con opciones de 1 y 2 recámaras. No cuenta con unidades de 3 recámaras.",
+      en: "The development features exactly 16 residences across 5 residential levels (levels 2 through 6), exclusively offering 1 and 2 bedroom layouts. There are no 3-bedroom units.",
+    },
+  },
+  {
+    id: "V_INV_02",
+    category: "inventory_typologies",
+    topic: "Residencias de una recámara",
+    status: "VERIFIED",
+    source: "catalog.ts",
+    confidence: 1.0,
+    lastUpdated: "2026-09-15",
+    content: {
+      es: "Las residencias de una recámara se ubican en los niveles 2, 3 y 4 (unidades 201 a 204, 301 a 304 y 401 a 404), con áreas que van desde 71.86 m² hasta 90.70 m².",
+      en: "One-bedroom residences are located on levels 2, 3, and 4 (units 201-204, 301-304, 401-404), with total areas ranging from 71.86 m² to 90.70 m².",
+    },
+  },
+  {
+    id: "V_INV_03",
+    category: "inventory_typologies",
+    topic: "Residencias de dos recámaras y Penthouses",
+    status: "VERIFIED",
+    source: "catalog.ts",
+    confidence: 1.0,
+    lastUpdated: "2026-09-15",
+    content: {
+      es: "Las residencias de dos recámaras (501, 502, PH1 y PH2) cuentan con 142.63 m² y 2 baños completos. Los penthouses PH1 y PH2 son de un solo nivel (Nivel 6) y se encuentran inmediatamente debajo del Rooftop.",
+      en: "Two-bedroom residences (501, 502, PH1, PH2) offer 142.63 m² and 2 full bathrooms. Penthouses PH1 and PH2 are single-level (Level 6) situated directly below the Rooftop.",
+    },
+  },
+  {
+    id: "V_AMEN_01",
+    category: "amenities_views",
+    topic: "Amenidades: Lobby y Rooftop",
+    status: "VERIFIED",
+    source: "catalog.ts (amenities)",
+    confidence: 1.0,
+    lastUpdated: "2026-09-15",
+    content: {
+      es: "El proyecto cuenta con Lobby de acceso en planta baja y un Rooftop en el nivel superior con alberca panorámica, asoleaderos y vistas abiertas hacia Puerto Vallarta y el Océano Pacífico.",
+      en: "The project features an arrival Lobby on the ground floor and a top-level Rooftop with a panoramic pool, sundecks, and open views toward Puerto Vallarta and the Pacific Ocean.",
+    },
+  },
+  {
+    id: "V_EXP_01",
+    category: "architecture_structure",
+    topic: "Niveles del edificio y planos generales",
+    status: "VERIFIED",
+    source: "catalog.ts (generalPlans)",
+    confidence: 1.0,
+    lastUpdated: "2026-09-15",
+    content: {
+      es: "La edificación consta de 8 planos generales: Sótano, Planta baja, Niveles 2 al 6, y Rooftop. Cada nivel cuenta con planos arquitectónicos interactivos.",
+      en: "The building encompasses 8 general floor plans: Basement, Ground Floor, Levels 2 through 6, and Rooftop. Each floor features interactive architectural plans.",
+    },
+  },
+  {
+    id: "V_TOUR_01",
+    category: "operation_services",
+    topic: "Recorridos virtuales 360°",
+    status: "VERIFIED",
+    source: "catalog.ts (virtualTours)",
+    confidence: 1.0,
+    lastUpdated: "2026-09-15",
+    content: {
+      es: "El Sales Room cuenta con recorridos virtuales 360° para las residencias 201, 202, 204, 301, 302, 304, 401, 402, 404, 501 y PH1.",
+      en: "The Sales Room offers 360° virtual tours for units 201, 202, 204, 301, 302, 304, 401, 402, 404, 501, and PH1.",
+    },
+  },
+];
