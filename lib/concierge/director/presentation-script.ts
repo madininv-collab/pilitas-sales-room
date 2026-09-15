@@ -68,10 +68,9 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
     visualAction: { type: "open_floor_plan", residenceId: "401" },
     highlightAction: {
       type: "set_highlight",
-      targetType: "plan_region",
-      targetId: "terrace_living",
-      label: "Terraza & Sala Integrada",
-      regionCoordinates: { x: 20, y: 30, width: 48, height: 44 },
+      targetType: "control",
+      targetId: "floor_plan_canvas",
+      label: "Plano Arquitectónico · Residencia 401",
     },
     pauseDurationMs: 7000,
     nextStepId: "show_amenity_rooftop",
@@ -118,3 +117,10 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
 export function getPresentationStep(id: string): PresentationStep | undefined {
   return PILITAS_PRESENTATION_SCRIPT.find((step) => step.id === id);
 }
+
+/**
+ * Script de demostración guiada local (6 etapas).
+ * El presentador local utiliza esta secuencia estructurada como demostración determinista.
+ * La selección dinámica y la improvisación en vivo quedarán gobernadas por el planificador de temas en la Fase 2.
+ */
+export const PILITAS_LOCAL_DEMO_SCRIPT = PILITAS_PRESENTATION_SCRIPT;

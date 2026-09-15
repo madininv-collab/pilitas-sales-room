@@ -39,6 +39,7 @@ export interface SalesRoomHandlerBridge {
   clearHighlight?(): void;
   setLanguage(language: Language): void;
   setCurrency(currency: Currency): void;
+  requestHumanHandoff?(reason: string, preferredChannel?: "whatsapp" | "email" | "appointment"): void;
 }
 
 type DeepMutable<T> = {
@@ -418,6 +419,7 @@ export function createSalesRoomAdapter(bridge: SalesRoomHandlerBridge): SalesRoo
         }
 
         case "request_human_handoff": {
+          bridge.requestHumanHandoff?.(action.reason, action.preferredChannel);
           return {
             ok: true,
             action,

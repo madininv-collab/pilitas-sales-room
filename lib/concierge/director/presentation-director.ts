@@ -137,10 +137,25 @@ export function createPresentationDirector(config: PresentationDirectorConfig): 
       return null;
     }
 
-    // 5. Narrate step explanation
+    // 5. Narrate step explanation (verifying live inventory status if residence step)
     const currentContext = engine.getContext();
     const lang = currentContext.project.language;
-    const textToSpeak = step.narration[lang];
+    let textToSpeak = step.narration[lang];
+
+    if (step.id === "show_residence") {
+      const unit = currentContext.inventory.residences.find((r) => r.id === "401");
+      if (unit && unit.status !== "Disponible") {
+        if (unit.status === "Apartada") {
+          textToSpeak = lang === "es"
+            ? "Esta es la Residencia 401 en el cuarto nivel: una recámara, un baño y 76.90 m². Esta unidad se encuentra apartada, presentándose como muestra de esta tipología."
+            : "This is Residence 401 on the fourth level: one bedroom, one bath, and 76.90 m². This unit is currently reserved, presented as a model for this layout.";
+        } else if (unit.status === "Vendida") {
+          textToSpeak = lang === "es"
+            ? "Esta es la Residencia 401 en el cuarto nivel: una recámara, un baño y 76.90 m². Esta unidad ya fue vendida, mostrándose como referencia de diseño y acabados."
+            : "This is Residence 401 on the fourth level: one bedroom, one bath, and 76.90 m². This unit is already sold, shown as a design and finish reference.";
+        }
+      }
+    }
 
     if (sink) {
       const narrationResult = await sink.speak(textToSpeak, signal);

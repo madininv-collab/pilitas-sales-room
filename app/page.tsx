@@ -173,8 +173,10 @@ export default function Home() {
       })()
     : undefined;
 
-  function selectResidence(id: UnitId) {
-    conciergeRef.current?.notifyManualNavigation();
+  function selectResidence(id: UnitId, isManual = false) {
+    if (isManual) {
+      conciergeRef.current?.notifyManualNavigation();
+    }
     const visibleInCurrentView = hotspots[view].some((zone) => zone.id === id);
     if (!visibleInCurrentView) {
       setView(view === "front" ? "rear" : "front");
@@ -565,6 +567,24 @@ export default function Home() {
     appendChatMessage: (author, text) => {
       setChat((items) => [...items.slice(-39), { author, text }]);
     },
+    requestHumanHandoff: (reason, channel = "whatsapp") => {
+      const targetUnit = selected ? residenceName(selected, language) : "Las Verandas de Olas Altas";
+      if (channel === "whatsapp") {
+        const text = language === "es"
+          ? `Hola, me interesa ${targetUnit}. Consulta: ${reason}. Quisiera confirmar disponibilidad y agendar una visita.`
+          : `Hello, I am interested in ${targetUnit}. Query: ${reason}. Please confirm availability and help me arrange a visit.`;
+        const url = whatsappUrl(contacts, text);
+        if (typeof window !== "undefined") {
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      } else if (channel === "email") {
+        const subject = encodeURIComponent(`Consulta sobre ${targetUnit}`);
+        const body = encodeURIComponent(`Hola, quisiera más información sobre ${targetUnit}.\nMotivo: ${reason}`);
+        if (typeof window !== "undefined") {
+          window.open(`mailto:${contacts.email}?subject=${subject}&body=${body}`);
+        }
+      }
+    },
   });
   useEffect(() => {
     conciergeRef.current = concierge;
@@ -751,6 +771,7 @@ export default function Home() {
                 <button
                   type="button"
                   key={`${view}-${point.id}`}
+                  data-unit-id={point.id}
                   className={[
                     "unit-zone",
                     point.id.startsWith("PH") ? "is-penthouse-zone" : "",
@@ -765,7 +786,7 @@ export default function Home() {
                     height: `${point.height}%`,
                     "--zone-shape": point.clip,
                   } as CSSProperties}
-                  onClick={() => selectResidence(point.id)}
+                  onClick={() => selectResidence(point.id, true)}
                   tabIndex={exploring ? 0 : -1}
                   aria-label={`${t.explore} ${residenceName(unit, language)}, ${statusLabel(unit.status, language)}`}
                 >
@@ -1137,7 +1158,7 @@ export default function Home() {
                           type="button"
                           key={unit.id}
                           className={`${statusClass(unit.status)} ${isTwoUnitLevel ? "is-double-width" : ""} ${selectedId === unit.id ? "is-active" : ""}`}
-                          onClick={() => selectResidence(unit.id)}
+                          onClick={() => selectResidence(unit.id, true)}
                           tabIndex={inventoryOpen ? 0 : -1}
                           aria-label={`${residenceName(unit, language)}, ${unit.area.toFixed(2)} m², ${unit.beds} ${unit.beds === 1 ? t.bedroom : t.bedrooms}, ${unit.baths} ${unit.baths === 1 ? t.bathroom : t.bathrooms}, ${formatPrice(unit.price, currency, mxnPerUsd, language)}, ${statusLabel(unit.status, language)}`}
                         >
@@ -1374,7 +1395,7 @@ export default function Home() {
                       <span>{t.downloadPlan}</span>
                     </a>
                   </div>
-                  <div className="floor-plan-canvas">
+                  <div className={`floor-plan-canvas ${activeHighlight && (activeHighlight.targetId === "floor_plan_canvas" || activeHighlight.targetType === "plan_region" || (activeHighlight.targetType === "residence" && activeHighlight.targetId === selected.id && experienceView === "plan")) ? "is-concierge-highlighted" : ""}`}>
                     <ZoomablePlan
                       key={floorPlanFor(selected.id, planView)}
                       src={assetPath(floorPlanFor(selected.id, planView))}
@@ -1387,21 +1408,10 @@ export default function Home() {
                       fetchPriority="high"
                       onNavigate={changePlanView}
                     />
-                    {activeHighlight?.targetType === "plan_region" && activeHighlight.regionCoordinates && (
-                      <div
-                        className="concierge-plan-highlight"
-                        style={{
-                          left: `${activeHighlight.regionCoordinates.x}%`,
-                          top: `${activeHighlight.regionCoordinates.y}%`,
-                          width: `${activeHighlight.regionCoordinates.width}%`,
-                          height: `${activeHighlight.regionCoordinates.height}%`,
-                        }}
-                        aria-label={activeHighlight.label}
-                      >
-                        {activeHighlight.label && (
-                          <span className="concierge-highlight-tag">{activeHighlight.label}</span>
-                        )}
-                      </div>
+                    {activeHighlight && (activeHighlight.targetId === "floor_plan_canvas" || activeHighlight.targetType === "plan_region" || (activeHighlight.targetType === "residence" && activeHighlight.targetId === selected.id && experienceView === "plan")) && (
+                      <span className="concierge-highlight-tag" style={{ left: "20px", top: "-28px", zIndex: 10 }}>
+                        {activeHighlight.label ?? t.plan}
+                      </span>
                     )}
                     <span className="plan-zoom-hint">{t.zoomPlanHint}</span>
                   </div>

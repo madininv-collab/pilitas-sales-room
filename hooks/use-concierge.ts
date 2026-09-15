@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+/* eslint-disable react-hooks/refs */
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   AmenityId,
   Currency,
@@ -86,6 +87,7 @@ export interface UseConciergeProps {
   setLanguage: (language: Language) => void;
   setCurrency: (currency: Currency) => void;
   appendChatMessage: (author: "visitor" | "concierge", text: string) => void;
+  requestHumanHandoff?: (reason: string, preferredChannel?: "whatsapp" | "email" | "appointment") => void;
 }
 
 export interface UseConciergeReturn {
@@ -166,8 +168,12 @@ function formatActionConfirmation(action: ConciergeAction, result: ToolResult, l
       return es ? `Consulté los detalles de la Residencia ${action.residenceId}.` : `Retrieved details for Residence ${action.residenceId}.`;
     case "get_project_information":
       return es ? "Consulté la información verificada del proyecto." : "Retrieved verified project information.";
-    case "request_human_handoff":
-      return es ? "Solicitud de contacto enviada a un asesor de ventas." : "Contact request forwarded to a sales advisor.";
+    case "request_human_handoff": {
+      const channelLabel = action.preferredChannel === "email" ? "correo" : "WhatsApp";
+      return es
+        ? `Preparé un enlace directo vía ${channelLabel} con el equipo de ventas para: "${action.reason}". Puedes pulsar el enlace abajo para iniciar la conversación.`
+        : `Prepared a direct ${action.preferredChannel === "email" ? "email" : "WhatsApp"} link with sales for: "${action.reason}". Click below to start the conversation.`;
+    }
   }
 }
 
@@ -191,50 +197,94 @@ export function useConcierge(props: UseConciergeProps): UseConciergeReturn {
     saveSessionState(conversationState);
   }, [conversationState]);
 
+  const propsRef = useRef(props);
+  propsRef.current = props;
+
   const getFreshContext = useCallback((): ConciergeContext => {
+    const p = propsRef.current;
     return buildConciergeContext({
-      residences: props.residences,
-      selectedId: props.selectedId,
-      view: props.view,
-      exploring: props.exploring,
-      inventoryOpen: props.inventoryOpen,
-      mapOpen: props.mapOpen,
-      interiorOpen: props.interiorOpen,
-      experienceView: props.experienceView,
-      selectedAmenityId: props.selectedAmenityId,
-      generalPlansOpen: props.generalPlansOpen,
-      generalPlanIndex: props.generalPlanIndex,
-      totalGeneralPlans: props.totalGeneralPlans,
-      planView: props.planView,
-      galleryIndex: props.galleryIndex,
-      totalGalleryImages: props.totalGalleryImages,
-      activeHighlight: props.activeHighlight,
-      isTyping: props.isTyping,
-      language: props.language,
-      currency: props.currency,
-      mxnPerUsd: props.mxnPerUsd,
-      syncStatus: props.syncStatus,
-      updatedAt: props.updatedAt,
-      voiceInputAvailable: props.voiceInputAvailable,
-      voiceOutputAvailable: props.voiceOutputAvailable,
+      residences: p.residences,
+      selectedId: p.selectedId,
+      view: p.view,
+      exploring: p.exploring,
+      inventoryOpen: p.inventoryOpen,
+      mapOpen: p.mapOpen,
+      interiorOpen: p.interiorOpen,
+      experienceView: p.experienceView,
+      selectedAmenityId: p.selectedAmenityId,
+      generalPlansOpen: p.generalPlansOpen,
+      generalPlanIndex: p.generalPlanIndex,
+      totalGeneralPlans: p.totalGeneralPlans,
+      planView: p.planView,
+      galleryIndex: p.galleryIndex,
+      totalGalleryImages: p.totalGalleryImages,
+      activeHighlight: p.activeHighlight,
+      isTyping: p.isTyping,
+      language: p.language,
+      currency: p.currency,
+      mxnPerUsd: p.mxnPerUsd,
+      syncStatus: p.syncStatus,
+      updatedAt: p.updatedAt,
+      voiceInputAvailable: p.voiceInputAvailable,
+      voiceOutputAvailable: p.voiceOutputAvailable,
     });
-  }, [props]);
+  }, []);
 
   const narrationSink: NarrationSink = useMemo(() => ({
     speak: async (text: string, signal?: AbortSignal) => {
       if (signal?.aborted) return { completed: false, aborted: true };
-      props.appendChatMessage("concierge", text);
+      const p = propsRef.current;
+      p.appendChatMessage("concierge", text);
 
-      // If browser SpeechSynthesis is enabled and supported, speak in background
-      if (typeof window !== "undefined" && "speechSynthesis" in window && props.voiceOutputAvailable) {
-        try {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.lang = props.language === "es" ? "es-MX" : "en-US";
-          window.speechSynthesis.speak(utterance);
-        } catch {
-          // Graceful fallback if audio is blocked
-        }
+      // If browser SpeechSynthesis is enabled and supported, speak and wait for completion before advancing
+      if (typeof window !== "undefined" && "speechSynthesis" in window && p.voiceOutputAvailable) {
+        return new Promise<{ completed: boolean; aborted: boolean }>((resolve) => {
+          try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = p.language === "es" ? "es-MX" : "en-US";
+            utterance.rate = 1.0;
+
+            let finished = false;
+            const finish = (completed: boolean, aborted: boolean) => {
+              if (finished) return;
+              finished = true;
+              if (signal) signal.removeEventListener("abort", onAbort);
+              resolve({ completed, aborted });
+            };
+
+            const onAbort = () => {
+              if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+              }
+              finish(false, true);
+            };
+
+            if (signal) {
+              if (signal.aborted) {
+                return finish(false, true);
+              }
+              signal.addEventListener("abort", onAbort, { once: true });
+            }
+
+            utterance.onend = () => finish(true, false);
+            utterance.onerror = (e) => {
+              const wasCanceled = e.error === "canceled" || e.error === "interrupted";
+              finish(false, wasCanceled);
+            };
+
+            // Safety timeout based on word count (never hang indefinitely)
+            const words = text.trim().split(/\s+/).length;
+            const maxDurationMs = Math.max(5000, words * 500 + 4000);
+            setTimeout(() => {
+              if (!finished) finish(true, false);
+            }, maxDurationMs);
+
+            window.speechSynthesis.speak(utterance);
+          } catch {
+            resolve({ completed: true, aborted: false });
+          }
+        });
       }
 
       return { completed: true, aborted: false };
@@ -244,59 +294,60 @@ export function useConcierge(props: UseConciergeProps): UseConciergeReturn {
         window.speechSynthesis.cancel();
       }
     },
-  }), [props]);
+  }), []);
 
   const adapter = useMemo(() => {
     return createSalesRoomAdapter({
       getContext: () => getFreshContext(),
       selectResidence: (id) => {
         setConversationState((prev) => recordUnitShown(prev, id));
-        props.selectResidence(id);
+        propsRef.current.selectResidence(id);
       },
-      setFacade: (facade) => props.setFacade(facade),
-      openInventory: () => props.openInventory(),
-      closeInventory: () => props.closeInventory(),
+      setFacade: (facade) => propsRef.current.setFacade(facade),
+      openInventory: () => propsRef.current.openInventory(),
+      closeInventory: () => propsRef.current.closeInventory(),
       openFloorPlan: (id, view) => {
         setConversationState((prev) => recordFloorPlanOpened(prev, id));
-        props.openFloorPlan(id, view);
+        propsRef.current.openFloorPlan(id, view);
       },
       closeExperience: () => {
-        props.closeExperience();
-        props.clearHighlight?.();
+        propsRef.current.closeExperience();
+        propsRef.current.clearHighlight?.();
       },
-      setPlanView: (view) => props.setPlanView?.(view),
+      setPlanView: (view) => propsRef.current.setPlanView?.(view),
       showAmenity: (amenityId) => {
         setConversationState((prev) => recordAmenityConsulted(prev, amenityId));
-        props.showAmenity(amenityId);
+        propsRef.current.showAmenity(amenityId);
       },
       closeAmenity: () => {
-        props.closeAmenity?.();
-        props.clearHighlight?.();
+        propsRef.current.closeAmenity?.();
+        propsRef.current.clearHighlight?.();
       },
       openTour: (id) => {
         setConversationState((prev) => recordTourOpened(prev, id));
-        props.openTour(id);
+        propsRef.current.openTour(id);
       },
       closeTour: () => {
-        props.closeTour?.();
-        props.clearHighlight?.();
+        propsRef.current.closeTour?.();
+        propsRef.current.clearHighlight?.();
       },
-      openMap: () => props.openMap?.(),
-      closeMap: () => props.closeMap?.(),
-      openGeneralPlans: (idx) => props.openGeneralPlans?.(idx),
-      setGeneralPlanIndex: (idx) => props.setGeneralPlanIndex?.(idx),
+      openMap: () => propsRef.current.openMap?.(),
+      closeMap: () => propsRef.current.closeMap?.(),
+      openGeneralPlans: (idx) => propsRef.current.openGeneralPlans?.(idx),
+      setGeneralPlanIndex: (idx) => propsRef.current.setGeneralPlanIndex?.(idx),
       closeGeneralPlans: () => {
-        props.closeGeneralPlans?.();
-        props.clearHighlight?.();
+        propsRef.current.closeGeneralPlans?.();
+        propsRef.current.clearHighlight?.();
       },
-      openInteriorGallery: (id, idx) => props.openInteriorGallery?.(id, idx),
-      setGalleryIndex: (idx) => props.setGalleryIndex?.(idx),
-      setHighlight: (highlight) => props.setHighlight?.(highlight),
-      clearHighlight: () => props.clearHighlight?.(),
-      setLanguage: (lang) => props.setLanguage(lang),
-      setCurrency: (curr) => props.setCurrency(curr),
+      openInteriorGallery: (id, idx) => propsRef.current.openInteriorGallery?.(id, idx),
+      setGalleryIndex: (idx) => propsRef.current.setGalleryIndex?.(idx),
+      setHighlight: (highlight) => propsRef.current.setHighlight?.(highlight),
+      clearHighlight: () => propsRef.current.clearHighlight?.(),
+      setLanguage: (lang) => propsRef.current.setLanguage(lang),
+      setCurrency: (curr) => propsRef.current.setCurrency(curr),
+      requestHumanHandoff: (reason, channel) => propsRef.current.requestHumanHandoff?.(reason, channel),
     });
-  }, [getFreshContext, props]);
+  }, [getFreshContext]);
 
   const engine = useMemo(() => {
     return createConciergeEngine({
@@ -310,10 +361,10 @@ export function useConcierge(props: UseConciergeProps): UseConciergeReturn {
       engine,
       narrationSink,
       autoAdvance: true,
-      isTyping: () => Boolean(props.isTyping),
+      isTyping: () => Boolean(propsRef.current.isTyping),
       onStateChange: (status) => setDirectorStatus(status),
     });
-  }, [engine, narrationSink, props.isTyping]);
+  }, [engine, narrationSink]);
 
   const ask = useCallback(async (raw: string) => {
     const clean = raw.trim().slice(0, 1000);
