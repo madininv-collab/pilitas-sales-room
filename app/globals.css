@@ -4731,3 +4731,143 @@ input:focus-visible {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   ALGO CONCIERGE: Contextual Highlighting & Voice Controls
+   ========================================================================== */
+
+@keyframes conciergePulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(226, 171, 59, 0.6), inset 0 0 6px rgba(226, 171, 59, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(226, 171, 59, 0.95), inset 0 0 12px rgba(226, 171, 59, 0.5);
+  }
+}
+
+@keyframes micPulse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.9);
+    transform: scale(1.08);
+  }
+}
+
+/* Controls highlight (buttons in header, inventory drawer) */
+.is-concierge-highlighted {
+  outline: 2px solid #e2ab3b !important;
+  outline-offset: 2px;
+  animation: conciergePulse 2.4s ease-in-out infinite;
+}
+
+/* Facade unit zone highlight */
+.unit-zone.is-concierge-highlighted .unit-zone-surface {
+  opacity: 1 !important;
+  background: rgba(226, 171, 59, 0.28) !important;
+  box-shadow: 0 0 24px rgba(226, 171, 59, 0.8) !important;
+  border: 2px solid rgba(226, 171, 59, 0.95) !important;
+}
+
+.unit-zone.is-concierge-highlighted .unit-zone-label {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) !important;
+  border-color: rgba(226, 171, 59, 0.9) !important;
+  box-shadow: 0 0 18px rgba(226, 171, 59, 0.75) !important;
+  background: rgba(14, 18, 16, 0.94) !important;
+}
+
+/* Floor plan region highlight overlay */
+.concierge-plan-highlight {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px dashed #e2ab3b;
+  background: rgba(226, 171, 59, 0.16);
+  box-shadow: 0 0 20px rgba(226, 171, 59, 0.6);
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 25;
+  animation: conciergePulse 2.4s ease-in-out infinite;
+}
+
+.concierge-highlight-tag {
+  position: absolute;
+  top: -26px;
+  left: 0;
+  background: rgba(14, 18, 16, 0.95);
+  color: #e2ab3b;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid rgba(226, 171, 59, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Voice microphone toggle button in Concierge input */
+.concierge-mic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+  flex-shrink: 0;
+}
+
+.concierge-mic-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.concierge-mic-btn.is-listening {
+  background: rgba(239, 68, 68, 0.9);
+  border-color: #ef4444;
+  color: #fff;
+  animation: micPulse 1.6s ease-in-out infinite;
+}
+
+.concierge-mic-btn.is-denied,
+.concierge-mic-btn.is-unsupported {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.concierge-tts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.concierge-tts-btn.is-active {
+  background: rgba(226, 171, 59, 0.2);
+  border-color: rgba(226, 171, 59, 0.6);
+  color: #e2ab3b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-concierge-highlighted,
+  .concierge-plan-highlight,
+  .concierge-mic-btn.is-listening {
+    animation: none !important;
+  }
+}
+

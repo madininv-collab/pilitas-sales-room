@@ -4,9 +4,22 @@ import type {
   AmenityId,
   Language,
   Currency,
+  PlanView,
 } from "../../pilitas/types";
 import type { ConversationState } from "../state/types";
 import type { KnowledgeStore } from "../knowledge/types";
+
+export interface ActiveHighlight {
+  readonly targetType: "residence" | "amenity" | "control" | "plan_region";
+  readonly targetId: string;
+  readonly label?: string;
+  readonly regionCoordinates?: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
+}
 
 export interface ConciergeResidenceSnapshot {
   readonly id: UnitId;
@@ -24,7 +37,7 @@ export interface ConciergeResidenceSnapshot {
 }
 
 export interface ConciergeContext {
-  readonly schemaVersion: "1.0.0";
+  readonly schemaVersion: "1.0.0" | "2.0.0";
   readonly project: {
     readonly id: "pilitas";
     readonly name: string;
@@ -41,18 +54,24 @@ export interface ConciergeContext {
     readonly activeFacade: ViewId;
     readonly selectedResidenceId: UnitId | null;
     readonly inventoryOpen: boolean;
+    readonly mapOpen: boolean;
     readonly experienceModal: {
       readonly isOpen: boolean;
       readonly activeType: "interior" | "plan" | "tour" | "amenity" | null;
       readonly targetId: string | null;
+      readonly planView?: PlanView;
+      readonly galleryIndex?: number;
+      readonly totalGalleryImages?: number;
     };
     readonly selectedAmenityId: AmenityId | null;
     readonly generalPlans: {
       readonly isOpen: boolean;
       readonly activeIndex: number;
       readonly totalCount: number;
+      readonly currentLevelLabel?: string;
     };
-    readonly mapOpen?: boolean;
+    readonly activeHighlight: ActiveHighlight | null;
+    readonly isTyping?: boolean;
   };
   readonly inventory: {
     readonly syncStatus: "synced" | "loading" | "unavailable" | "error" | "unknown";
@@ -63,6 +82,8 @@ export interface ConciergeContext {
   readonly capabilities: {
     readonly supportedTools: readonly string[];
     readonly availableTours: readonly UnitId[];
+    readonly voiceInputAvailable?: boolean;
+    readonly voiceOutputAvailable?: boolean;
   };
 }
 
@@ -71,12 +92,33 @@ export type ConciergeAction =
   | { readonly type: "set_facade"; readonly facade: ViewId }
   | { readonly type: "open_inventory" }
   | { readonly type: "close_inventory" }
-  | { readonly type: "open_floor_plan"; readonly residenceId: UnitId }
+  | { readonly type: "open_floor_plan"; readonly residenceId: UnitId; readonly view?: PlanView }
   | { readonly type: "close_floor_plan" }
+  | { readonly type: "set_plan_view"; readonly view: PlanView }
   | { readonly type: "show_amenity"; readonly amenityId: AmenityId }
+  | { readonly type: "close_amenity" }
   | { readonly type: "open_tour"; readonly residenceId: UnitId }
+  | { readonly type: "close_tour" }
   | { readonly type: "open_map" }
   | { readonly type: "close_map" }
+  | { readonly type: "open_general_plans"; readonly index?: number }
+  | { readonly type: "set_general_plan_index"; readonly index: number }
+  | { readonly type: "close_general_plans" }
+  | { readonly type: "open_interior_gallery"; readonly residenceId: UnitId; readonly index?: number }
+  | { readonly type: "set_gallery_index"; readonly index: number }
+  | {
+      readonly type: "set_highlight";
+      readonly targetType: "residence" | "amenity" | "control" | "plan_region";
+      readonly targetId: string;
+      readonly label?: string;
+      readonly regionCoordinates?: {
+        readonly x: number;
+        readonly y: number;
+        readonly width: number;
+        readonly height: number;
+      };
+    }
+  | { readonly type: "clear_highlight" }
   | { readonly type: "set_language"; readonly language: Language }
   | { readonly type: "set_currency"; readonly currency: Currency }
   | {
@@ -144,8 +186,8 @@ export interface ConciergeProvider {
   interpret(input: {
     readonly text: string;
     readonly context: ConciergeContext;
-    readonly conversationState: ConversationState;
-    readonly knowledgeStore: KnowledgeStore;
+    readonly conversationState?: ConversationState;
+    readonly knowledgeStore?: KnowledgeStore;
     readonly tools: readonly ToolDescriptor[];
     readonly signal?: AbortSignal;
   }): Promise<ProviderDecision>;
@@ -162,13 +204,13 @@ export interface ConciergeTurnResult {
   readonly toolResult?: ToolResult;
   readonly contextBefore: ConciergeContext;
   readonly contextAfter: ConciergeContext;
-  readonly conversationStateAfter: ConversationState;
+  readonly conversationStateAfter?: ConversationState;
 }
 
 export interface ConciergeEngine {
   getContext(): ConciergeContext;
-  getConversationState(): ConversationState;
-  getKnowledgeStore(): KnowledgeStore;
+  getConversationState?(): ConversationState;
+  getKnowledgeStore?(): KnowledgeStore;
   handle(input: { text: string; signal?: AbortSignal }): Promise<ConciergeTurnResult>;
   executeAction(action: ConciergeAction): Promise<ToolResult>;
 }
@@ -185,9 +227,12 @@ export type PresentationState =
 export interface PresentationStep {
   readonly id: string;
   readonly order: number;
+  readonly topicId?: string;
   readonly title: { readonly es: string; readonly en: string };
   readonly narration: { readonly es: string; readonly en: string };
   readonly visualAction?: ConciergeAction;
+  readonly highlightAction?: ConciergeAction;
+  readonly pauseDurationMs?: number;
   readonly nextStepId: string | null;
 }
 
@@ -202,4 +247,5 @@ export interface PresentationDirectorStatus {
   readonly totalSteps: number;
   readonly currentStep: PresentationStep | null;
   readonly resumedFromStepId: string | null;
+  readonly isAutoAdvancing?: boolean;
 }

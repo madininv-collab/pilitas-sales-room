@@ -62,7 +62,7 @@ export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = [
       properties: {
         residenceId: {
           type: "string",
-          description: "Unit ID whose floor plan should be displayed (e.g. '201', '401', 'PH1').",
+          description: "Unit ID whose floor plan to open.",
           enum: [
             "201", "202", "203", "204",
             "301", "302", "303", "304",
@@ -76,7 +76,7 @@ export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = [
   },
   {
     name: "close_floor_plan",
-    description: "Closes the floor plan modal if currently open.",
+    description: "Closes the floor plan modal.",
     parameters: {
       type: "object",
       properties: {},
@@ -84,14 +84,29 @@ export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = [
     },
   },
   {
+    name: "set_plan_view",
+    description: "Switches the view mode of the active floor plan between color render, clean blueprint, and dimensioned measurements.",
+    parameters: {
+      type: "object",
+      properties: {
+        view: {
+          type: "string",
+          description: "Floor plan view mode.",
+          enum: ["color", "clean", "dimensions"],
+        },
+      },
+      required: ["view"],
+    },
+  },
+  {
     name: "show_amenity",
-    description: "Shows an amenity experience modal (Lobby or Rooftop).",
+    description: "Opens the gallery and experience view for a building amenity (lobby or rooftop).",
     parameters: {
       type: "object",
       properties: {
         amenityId: {
           type: "string",
-          description: "Amenity identifier: 'lobby' or 'rooftop'.",
+          description: "Amenity to display.",
           enum: ["lobby", "rooftop"],
         },
       },
@@ -99,19 +114,28 @@ export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = [
     },
   },
   {
+    name: "close_amenity",
+    description: "Closes the amenity experience view.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
     name: "open_tour",
-    description: "Opens the 360-degree virtual tour for an eligible residence unit.",
+    description: "Opens the 360° virtual Matterport tour for an authorized residence unit.",
     parameters: {
       type: "object",
       properties: {
         residenceId: {
           type: "string",
-          description: "Unit ID with an available virtual tour (e.g. '201', '401', 'PH1').",
+          description: "Unit ID with an authorized tour.",
           enum: [
-            "201", "202", "203", "204",
-            "301", "302", "303", "304",
-            "401", "402", "403", "404",
-            "501", "502", "PH1", "PH2",
+            "201", "202", "204",
+            "301", "302", "304",
+            "401", "402", "404",
+            "501", "PH1",
           ],
         },
       },
@@ -119,14 +143,138 @@ export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = [
     },
   },
   {
+    name: "close_tour",
+    description: "Closes the 360° virtual tour modal.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "open_map",
+    description: "Opens the geographical location map of the project in Puerto Vallarta.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "close_map",
+    description: "Closes the geographical location map modal.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "open_general_plans",
+    description: "Opens the general architectural building floor plans (Basement to Rooftop).",
+    parameters: {
+      type: "object",
+      properties: {
+        index: {
+          type: "number",
+          description: "Optional level index to open (0: Basement, 1: Ground Floor, 2-6: Levels 2-6, 7: Rooftop).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "set_general_plan_index",
+    description: "Switches the active level index of the general plans.",
+    parameters: {
+      type: "object",
+      properties: {
+        index: {
+          type: "number",
+          description: "Level index (0 to 7).",
+        },
+      },
+      required: ["index"],
+    },
+  },
+  {
+    name: "close_general_plans",
+    description: "Closes the general plans modal.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "open_interior_gallery",
+    description: "Opens the interior rendering gallery for a residence.",
+    parameters: {
+      type: "object",
+      properties: {
+        residenceId: {
+          type: "string",
+          description: "Unit ID whose interior gallery to show.",
+        },
+      },
+      required: ["residenceId"],
+    },
+  },
+  {
+    name: "set_gallery_index",
+    description: "Changes the active photo index inside the open gallery.",
+    parameters: {
+      type: "object",
+      properties: {
+        index: {
+          type: "number",
+          description: "Zero-based photo index.",
+        },
+      },
+      required: ["index"],
+    },
+  },
+  {
+    name: "set_highlight",
+    description: "Highlights an element (residence, amenity, UI control, or plan region) on screen with a subtle glow or outline.",
+    parameters: {
+      type: "object",
+      properties: {
+        targetType: {
+          type: "string",
+          description: "Target element type.",
+          enum: ["residence", "amenity", "control", "plan_region"],
+        },
+        targetId: {
+          type: "string",
+          description: "Identifier of the element to highlight.",
+        },
+        label: {
+          type: "string",
+          description: "Optional descriptive tooltip label.",
+        },
+      },
+      required: ["targetType", "targetId"],
+    },
+  },
+  {
+    name: "clear_highlight",
+    description: "Clears any active spotlight or visual highlight.",
+    parameters: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
     name: "set_language",
-    description: "Changes the display language of the sales room.",
+    description: "Switches the application language between Spanish ('es') and English ('en').",
     parameters: {
       type: "object",
       properties: {
         language: {
           type: "string",
-          description: "Language code: 'es' (Spanish) or 'en' (English).",
+          description: "Target language code.",
           enum: ["es", "en"],
         },
       },
@@ -135,21 +283,21 @@ export const TOOL_DESCRIPTORS: readonly ToolDescriptor[] = [
   },
   {
     name: "set_currency",
-    description: "Changes the active currency for price display.",
+    description: "Switches the active price currency between Mexican Pesos ('MXN') and US Dollars ('USD').",
     parameters: {
       type: "object",
       properties: {
         currency: {
           type: "string",
-          description: "Currency code: 'MXN' (Mexican Pesos) or 'USD' (US Dollars).",
+          description: "Target currency.",
           enum: ["MXN", "USD"],
         },
       },
       required: ["currency"],
     },
   },
-] as const;
+];
 
 export function getToolDescriptor(name: string): ToolDescriptor | undefined {
-  return TOOL_DESCRIPTORS.find((tool) => tool.name === name);
+  return TOOL_DESCRIPTORS.find((t) => t.name === name);
 }

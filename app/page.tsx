@@ -18,11 +18,16 @@ import {
   MapPin,
   Maximize2,
   MessageCircle,
+  Mic,
+  MicOff,
   MoveHorizontal,
   MoveRight,
   Pointer,
+  RotateCcw,
   Send,
   Sparkles,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import {
@@ -43,6 +48,7 @@ import { useInventory } from "@/hooks/use-inventory";
 import { whatsappUrl } from "@/lib/pilitas/contact";
 import { assetPath } from "@/lib/pilitas/asset-path";
 import { useConcierge } from "@/hooks/use-concierge";
+import type { ActiveHighlight } from "@/lib/concierge";
 
 type ChatItem = { author: "concierge" | "visitor"; text: string };
 type SwipeOrigin = { pointerId: number; x: number; y: number } | null;
@@ -82,6 +88,11 @@ export default function Home() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [renderNoticeVisible, setRenderNoticeVisible] = useState(true);
   const [conciergeOpen, setConciergeOpen] = useState(false);
+  const [activeHighlight, setActiveHighlight] = useState<ActiveHighlight | null>(null);
+  const [micStatus, setMicStatus] = useState<"idle" | "listening" | "denied" | "unsupported">("idle");
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const speechRecognitionRef = useRef<any>(null);
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState<ChatItem[]>([
     {
@@ -443,17 +454,25 @@ export default function Home() {
     view,
     exploring,
     inventoryOpen,
+    mapOpen,
     interiorOpen,
     experienceView,
     selectedAmenityId,
     generalPlansOpen,
     generalPlanIndex,
     totalGeneralPlans: generalPlans.length,
+    planView,
+    galleryIndex,
+    totalGalleryImages: activeGallery.length,
+    activeHighlight,
+    isTyping: message.trim().length > 0,
     language,
     currency,
     mxnPerUsd,
     syncStatus,
     updatedAt,
+    voiceInputAvailable: typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window),
+    voiceOutputAvailable: ttsEnabled && typeof window !== "undefined" && "speechSynthesis" in window,
     selectResidence: (id) => {
       selectResidence(id);
     },
@@ -462,21 +481,24 @@ export default function Home() {
     },
     openInventory: () => setInventoryOpen(true),
     closeInventory: () => setInventoryOpen(false),
-    openFloorPlan: (id) => {
+    openFloorPlan: (id, viewMode) => {
       const visibleInCurrentView = hotspots[view].some((zone) => zone.id === id);
       if (!visibleInCurrentView) {
         setView(view === "front" ? "rear" : "front");
       }
       setSelectedId(id);
       setSelectedAmenityId(null);
-      setPlanView("color");
+      setPlanView(viewMode ?? "color");
       setRenderNoticeVisible(true);
       setExperienceView("plan");
       setInteriorOpen(true);
       setExploring(true);
       setInventoryOpen(false);
     },
-    closeExperience,
+    closeExperience: () => {
+      closeExperience();
+      setActiveHighlight(null);
+    },
     showAmenity: openAmenity,
     openTour: (id) => {
       setSelectedId(id);
@@ -486,6 +508,57 @@ export default function Home() {
       setInteriorOpen(true);
       setExploring(true);
       setInventoryOpen(false);
+    },
+    openMap: () => {
+      setInventoryOpen(false);
+      setMapOpen(true);
+    },
+    closeMap: () => {
+      setMapOpen(false);
+    },
+    openGeneralPlans: (idx) => {
+      setInventoryOpen(false);
+      setMapOpen(false);
+      if (typeof idx === "number" && idx >= 0 && idx < generalPlans.length) {
+        setGeneralPlanIndex(idx);
+      }
+      setGeneralPlansOpen(true);
+    },
+    setGeneralPlanIndex: (idx) => {
+      if (idx >= 0 && idx < generalPlans.length) {
+        setGeneralPlanIndex(idx);
+      }
+    },
+    closeGeneralPlans: () => {
+      setGeneralPlansOpen(false);
+      setActiveHighlight(null);
+    },
+    setPlanView: (viewMode) => {
+      setPlanView(viewMode);
+    },
+    openInteriorGallery: (id, idx) => {
+      selectResidence(id);
+      setExperienceView("interior");
+      if (typeof idx === "number") setGalleryIndex(idx);
+      setInteriorOpen(true);
+    },
+    setGalleryIndex: (idx) => {
+      setGalleryIndex(idx);
+    },
+    setHighlight: (h) => {
+      setActiveHighlight(h);
+    },
+    clearHighlight: () => {
+      setActiveHighlight(null);
+    },
+    closeTour: () => {
+      setInteriorOpen(false);
+      setActiveHighlight(null);
+    },
+    closeAmenity: () => {
+      setSelectedAmenityId(null);
+      setInteriorOpen(false);
+      setActiveHighlight(null);
     },
     setLanguage,
     setCurrency,
@@ -503,6 +576,94 @@ export default function Home() {
     setMessage("");
     setConciergeOpen(true);
     await concierge.ask(clean);
+  }
+
+  function handleStartTour() {
+    setChat((items) => [
+      ...items.slice(-39),
+      {
+        author: "concierge",
+        text: language === "es"
+          ? "Puedes activar el micrófono si prefieres hablar, o escribir aquí cualquier duda. Te atiendo en cualquier momento. Mientras tanto, continuamos con la visita."
+          : "You may activate the microphone if you prefer to speak, or type any questions here. I'm available at any time. Meanwhile, let's continue with the tour.",
+      },
+    ]);
+    void concierge.startPresentation();
+  }
+
+  function toggleMicrophone() {
+    if (typeof window === "undefined") return;
+    const SpeechRecognitionClass =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).SpeechRecognition ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionClass) {
+      setMicStatus("unsupported");
+      setChat((items) => [
+        ...items.slice(-39),
+        {
+          author: "concierge",
+          text: language === "es"
+            ? "El reconocimiento de voz no está soportado por este navegador. Puedes escribir aquí tus preguntas con normalidad."
+            : "Voice recognition is not supported in this browser. You can type your questions as normal.",
+        },
+      ]);
+      return;
+    }
+
+    if (micStatus === "listening") {
+      speechRecognitionRef.current?.stop();
+      setMicStatus("idle");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionClass();
+      speechRecognitionRef.current = recognition;
+      recognition.lang = language === "es" ? "es-MX" : "en-US";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setMicStatus("listening");
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
+        const transcript = event.results?.[0]?.[0]?.transcript?.trim();
+        if (transcript) {
+          void ask(transcript);
+        }
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          setMicStatus("denied");
+          setChat((items) => [
+            ...items.slice(-39),
+            {
+              author: "concierge",
+              text: language === "es"
+                ? "El permiso de micrófono fue denegado. La visita y el chat continúan funcionando sin problema por texto."
+                : "Microphone permission was denied. The tour and chat continue functioning via text without issue.",
+            },
+          ]);
+        } else {
+          setMicStatus("idle");
+        }
+      };
+
+      recognition.onend = () => {
+        setMicStatus("idle");
+      };
+
+      recognition.start();
+    } catch {
+      setMicStatus("idle");
+    }
   }
 
   function submitQuestion(event: FormEvent) {
@@ -585,6 +746,7 @@ export default function Home() {
           <div className="hotspot-layer" aria-label={t.hotspots} aria-hidden={!exploring}>
             {hotspots[view].map((point) => {
               const unit = residences.find((item) => item.id === point.id)!;
+              const isHighlighted = activeHighlight?.targetType === "residence" && activeHighlight.targetId === point.id;
               return (
                 <button
                   type="button"
@@ -594,6 +756,7 @@ export default function Home() {
                     point.id.startsWith("PH") ? "is-penthouse-zone" : "",
                     selectedId === point.id ? "is-selected" : "",
                     statusClass(unit.status),
+                    isHighlighted ? "is-concierge-highlighted" : "",
                   ].join(" ")}
                   style={{
                     left: `${point.x}%`,
@@ -617,11 +780,12 @@ export default function Home() {
             })}
             {amenityHotspots[view].map((point) => {
               const amenity = amenities[point.id];
+              const isHighlighted = activeHighlight?.targetType === "amenity" && activeHighlight.targetId === point.id;
               return (
                 <button
                   type="button"
                   key={`${view}-${point.id}`}
-                  className={`unit-zone amenity-zone amenity-zone--${point.id}`}
+                  className={`unit-zone amenity-zone amenity-zone--${point.id} ${isHighlighted ? "is-concierge-highlighted" : ""}`}
                   style={{
                     left: `${point.x}%`,
                     top: `${point.y}%`,
@@ -674,14 +838,19 @@ export default function Home() {
           </button>
 
           <div className="header-controls">
-            <button type="button" className="language-switch" onClick={toggleLanguage} aria-label={t.languageLabel}>
+            <button
+              type="button"
+              className={`language-switch ${activeHighlight?.targetType === "control" && activeHighlight.targetId === "language" ? "is-concierge-highlighted" : ""}`}
+              onClick={toggleLanguage}
+              aria-label={t.languageLabel}
+            >
               <Languages />
               <strong>{language.toUpperCase()}</strong>
               <span>{language === "es" ? "EN" : "ES"}</span>
             </button>
             <button
               type="button"
-              className="currency-switch"
+              className={`currency-switch ${activeHighlight?.targetType === "control" && activeHighlight.targetId === "currency" ? "is-concierge-highlighted" : ""}`}
               onClick={() => setCurrency((current) => current === "MXN" ? "USD" : "MXN")}
               aria-label={t.currencyLabel}
             >
@@ -692,7 +861,7 @@ export default function Home() {
             <DialogTrigger asChild>
               <button
                 type="button"
-                className="map-switch"
+                className={`map-switch ${activeHighlight?.targetType === "control" && activeHighlight.targetId === "map" ? "is-concierge-highlighted" : ""}`}
                 aria-label={t.mapLabel}
                 title={t.mapLabel}
                 onClick={() => setInventoryOpen(false)}
@@ -703,7 +872,7 @@ export default function Home() {
             </DialogTrigger>
             <button
               type="button"
-              className="plans-switch"
+              className={`plans-switch ${activeHighlight?.targetType === "control" && activeHighlight.targetId === "general_plans" ? "is-concierge-highlighted" : ""}`}
               aria-label={t.generalPlansAria}
               title={t.generalPlansAria}
               aria-haspopup="dialog"
@@ -929,7 +1098,7 @@ export default function Home() {
         >
           <button
             type="button"
-            className="inventory-handle"
+            className={`inventory-handle ${activeHighlight?.targetType === "control" && activeHighlight.targetId === "inventory" ? "is-concierge-highlighted" : ""}`}
             onClick={() => setInventoryOpen((current) => !current)}
             aria-expanded={inventoryOpen}
             tabIndex={exploring ? 0 : -1}
@@ -1019,8 +1188,19 @@ export default function Home() {
           <aside className="cinematic-concierge" aria-label={t.salesAssistant}>
             <div className="concierge-top">
               <span><Sparkles /></span>
-              <div><strong>{t.salesAssistant}</strong><small>{language === "es" ? "Asistente automático · no envía solicitudes" : "Automated assistant · requests are not sent"}</small></div>
-              <button type="button" onClick={() => setConciergeOpen(false)} aria-label={t.closeConcierge}><X /></button>
+              <div><strong>{t.salesAssistant}</strong><small>{language === "es" ? "Asistente autónomo e interactivo" : "Autonomous & interactive assistant"}</small></div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <button
+                  type="button"
+                  className={`concierge-tts-btn ${ttsEnabled ? "is-active" : ""}`}
+                  onClick={() => setTtsEnabled((current) => !current)}
+                  title={ttsEnabled ? (language === "es" ? "Silenciar voz del Concierge" : "Mute Concierge voice") : (language === "es" ? "Activar voz del Concierge" : "Enable Concierge voice")}
+                  aria-label={ttsEnabled ? "Silenciar voz" : "Activar voz"}
+                >
+                  {ttsEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+                </button>
+                <button type="button" onClick={() => setConciergeOpen(false)} aria-label={t.closeConcierge}><X /></button>
+              </div>
             </div>
             <div className="concierge-log" aria-live="polite">
               {chat.slice(-3).map((item, index) => (
@@ -1037,8 +1217,10 @@ export default function Home() {
             {concierge.directorStatus.state !== "idle" && (
               <div className="presentation-status-bar" style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "8px 12px", background: "rgba(255, 255, 255, 0.05)", borderRadius: "8px", border: "1px solid rgba(255, 255, 255, 0.1)", margin: "0 16px 8px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.75rem", opacity: 0.9 }}>
-                  <span><strong>{language === "es" ? "Presentación guiada" : "Guided Tour"}</strong> ({concierge.directorStatus.currentStepIndex + 1}/{concierge.directorStatus.totalSteps})</span>
-                  <span style={{ textTransform: "capitalize", opacity: 0.7 }}>{concierge.directorStatus.state}</span>
+                  <span><strong>{language === "es" ? "Presentación autónoma" : "Autonomous Tour"}</strong> ({concierge.directorStatus.currentStepIndex + 1}/{concierge.directorStatus.totalSteps})</span>
+                  <span style={{ textTransform: "capitalize", opacity: 0.7 }}>
+                    {concierge.directorStatus.isAutoAdvancing ? (language === "es" ? "Avanzando..." : "Advancing...") : concierge.directorStatus.state}
+                  </span>
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
                   {concierge.directorStatus.state === "presenting" ? (
@@ -1056,13 +1238,21 @@ export default function Home() {
                   <button type="button" style={{ flex: 1, padding: "4px 8px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", borderRadius: "4px", cursor: "pointer" }} onClick={concierge.stopPresentation}>
                     {language === "es" ? "Terminar" : "Stop"}
                   </button>
+                  <button
+                    type="button"
+                    style={{ padding: "4px 8px", fontSize: "0.75rem", background: "rgba(255,255,255,0.05)", borderRadius: "4px", cursor: "pointer" }}
+                    onClick={concierge.resetSession}
+                    title={language === "es" ? "Reiniciar sesión y memoria" : "Reset session & memory"}
+                  >
+                    <RotateCcw size={12} />
+                  </button>
                 </div>
               </div>
             )}
             <div className="concierge-prompts">
               {concierge.directorStatus.state === "idle" && (
-                <button type="button" onClick={() => concierge.startPresentation()}>
-                  {language === "es" ? "▶ Iniciar recorrido" : "▶ Start tour"}
+                <button type="button" onClick={handleStartTour}>
+                  {language === "es" ? "▶ Iniciar visita guiada" : "▶ Start guided tour"}
                 </button>
               )}
               <button type="button" onClick={() => ask(language === "es" ? "¿Cuál tiene mejor vista?" : "Which residence has the best view?")}>{t.betterView}</button>
@@ -1070,7 +1260,15 @@ export default function Home() {
               <button type="button" onClick={() => ask(language === "es" ? "¿Cuál es el esquema de pago?" : "What are the payment options?")}>{t.payment}</button>
             </div>
             <form onSubmit={submitQuestion} className="concierge-input">
-              <MessageCircle />
+              <button
+                type="button"
+                className={`concierge-mic-btn ${micStatus === "listening" ? "is-listening" : ""} ${micStatus === "denied" ? "is-denied" : ""} ${micStatus === "unsupported" ? "is-unsupported" : ""}`}
+                onClick={toggleMicrophone}
+                aria-label={micStatus === "listening" ? "Detener micrófono" : "Activar micrófono"}
+                title={micStatus === "listening" ? (language === "es" ? "Escuchando... clic para detener" : "Listening... click to stop") : (language === "es" ? "Hablar por micrófono" : "Speak into microphone")}
+              >
+                {micStatus === "listening" ? <MicOff size={15} /> : <Mic size={15} />}
+              </button>
               <input
                 maxLength={1000}
                 value={message}
@@ -1189,6 +1387,22 @@ export default function Home() {
                       fetchPriority="high"
                       onNavigate={changePlanView}
                     />
+                    {activeHighlight?.targetType === "plan_region" && activeHighlight.regionCoordinates && (
+                      <div
+                        className="concierge-plan-highlight"
+                        style={{
+                          left: `${activeHighlight.regionCoordinates.x}%`,
+                          top: `${activeHighlight.regionCoordinates.y}%`,
+                          width: `${activeHighlight.regionCoordinates.width}%`,
+                          height: `${activeHighlight.regionCoordinates.height}%`,
+                        }}
+                        aria-label={activeHighlight.label}
+                      >
+                        {activeHighlight.label && (
+                          <span className="concierge-highlight-tag">{activeHighlight.label}</span>
+                        )}
+                      </div>
+                    )}
                     <span className="plan-zoom-hint">{t.zoomPlanHint}</span>
                   </div>
                 </div>

@@ -97,8 +97,8 @@ function createMockBridge(initialOverrides = {}) {
   return { bridge, adapter: createSalesRoomAdapter(bridge) };
 }
 
-test("Tool registry contains all 10 expected tools with valid parameters", () => {
-  assert.equal(TOOL_DESCRIPTORS.length, 10);
+test("Tool registry contains all 22 expected tools with valid parameters", () => {
+  assert.equal(TOOL_DESCRIPTORS.length, 22);
   const toolNames = TOOL_DESCRIPTORS.map((t) => t.name);
   assert.ok(toolNames.includes("select_residence"));
   assert.ok(toolNames.includes("set_facade"));
@@ -106,8 +106,20 @@ test("Tool registry contains all 10 expected tools with valid parameters", () =>
   assert.ok(toolNames.includes("close_inventory"));
   assert.ok(toolNames.includes("open_floor_plan"));
   assert.ok(toolNames.includes("close_floor_plan"));
+  assert.ok(toolNames.includes("set_plan_view"));
   assert.ok(toolNames.includes("show_amenity"));
+  assert.ok(toolNames.includes("close_amenity"));
   assert.ok(toolNames.includes("open_tour"));
+  assert.ok(toolNames.includes("close_tour"));
+  assert.ok(toolNames.includes("open_map"));
+  assert.ok(toolNames.includes("close_map"));
+  assert.ok(toolNames.includes("open_general_plans"));
+  assert.ok(toolNames.includes("set_general_plan_index"));
+  assert.ok(toolNames.includes("close_general_plans"));
+  assert.ok(toolNames.includes("open_interior_gallery"));
+  assert.ok(toolNames.includes("set_gallery_index"));
+  assert.ok(toolNames.includes("set_highlight"));
+  assert.ok(toolNames.includes("clear_highlight"));
   assert.ok(toolNames.includes("set_language"));
   assert.ok(toolNames.includes("set_currency"));
 });

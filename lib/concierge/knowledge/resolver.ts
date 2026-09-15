@@ -15,7 +15,6 @@ export function resolveKnowledgeQuery(
   store: KnowledgeStore = defaultKnowledgeStore
 ): ResolvedKnowledgeAnswer | null {
   const lang = context.project.language;
-  const es = lang === "es";
 
   // Check Knowledge Store first for strict guards (conflicts, unknown, legal, financial)
   const knowledgeResult = store.resolveCustomerQuery(rawQuery, lang);

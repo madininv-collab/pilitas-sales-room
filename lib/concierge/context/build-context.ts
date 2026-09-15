@@ -6,9 +6,14 @@ import type {
   Language,
   Currency,
   ExperienceView,
+  PlanView,
 } from "../../pilitas/types";
-import { hotspots, virtualTours } from "../../pilitas/catalog";
-import type { ConciergeContext, ConciergeResidenceSnapshot } from "../contracts";
+import { hotspots, virtualTours, generalPlans } from "../../pilitas/catalog";
+import type {
+  ActiveHighlight,
+  ConciergeContext,
+  ConciergeResidenceSnapshot,
+} from "../contracts";
 
 export interface BuildContextParams {
   residences: readonly Residence[];
@@ -16,17 +21,25 @@ export interface BuildContextParams {
   view: ViewId;
   exploring: boolean;
   inventoryOpen: boolean;
+  mapOpen?: boolean;
   interiorOpen: boolean;
   experienceView: ExperienceView;
   selectedAmenityId: AmenityId | null;
   generalPlansOpen: boolean;
   generalPlanIndex: number;
   totalGeneralPlans: number;
+  planView?: PlanView;
+  galleryIndex?: number;
+  totalGalleryImages?: number;
+  activeHighlight?: ActiveHighlight | null;
+  isTyping?: boolean;
   language: Language;
   currency: Currency;
   mxnPerUsd: number;
   syncStatus: "synced" | "loading" | "unavailable" | "error" | "unknown";
   updatedAt: string | null;
+  voiceInputAvailable?: boolean;
+  voiceOutputAvailable?: boolean;
 }
 
 const SUPPORTED_TOOLS: readonly string[] = [
@@ -36,10 +49,26 @@ const SUPPORTED_TOOLS: readonly string[] = [
   "close_inventory",
   "open_floor_plan",
   "close_floor_plan",
+  "set_plan_view",
   "show_amenity",
+  "close_amenity",
   "open_tour",
+  "close_tour",
+  "open_map",
+  "close_map",
+  "open_general_plans",
+  "set_general_plan_index",
+  "close_general_plans",
+  "open_interior_gallery",
+  "set_gallery_index",
+  "set_highlight",
+  "clear_highlight",
   "set_language",
   "set_currency",
+  "list_units",
+  "get_unit_details",
+  "get_project_information",
+  "request_human_handoff",
 ] as const;
 
 function deepFreeze<T>(obj: T): T {
@@ -63,17 +92,25 @@ export function buildConciergeContext(params: BuildContextParams): ConciergeCont
     view,
     exploring,
     inventoryOpen,
+    mapOpen = false,
     interiorOpen,
     experienceView,
     selectedAmenityId,
     generalPlansOpen,
     generalPlanIndex,
     totalGeneralPlans,
+    planView = "color",
+    galleryIndex = 0,
+    totalGalleryImages = 0,
+    activeHighlight = null,
+    isTyping = false,
     language,
     currency,
     mxnPerUsd,
     syncStatus,
     updatedAt,
+    voiceInputAvailable = false,
+    voiceOutputAvailable = false,
   } = params;
 
   // Determine facade for each unit from authoritative hotspots catalog
@@ -105,9 +142,10 @@ export function buildConciergeContext(params: BuildContextParams): ConciergeCont
     : null;
 
   const availableTours = Object.keys(virtualTours) as UnitId[];
+  const currentLevelLabel = generalPlans[generalPlanIndex]?.label[language] ?? `Nivel ${generalPlanIndex}`;
 
   const rawContext: ConciergeContext = {
-    schemaVersion: "1.0.0",
+    schemaVersion: "2.0.0",
     project: {
       id: "pilitas",
       name: "Las Verandas de Olas Altas",
@@ -124,17 +162,24 @@ export function buildConciergeContext(params: BuildContextParams): ConciergeCont
       activeFacade: view,
       selectedResidenceId: selectedId,
       inventoryOpen,
+      mapOpen,
       experienceModal: {
         isOpen: interiorOpen,
         activeType,
         targetId,
+        planView: activeType === "plan" ? planView : undefined,
+        galleryIndex: activeType === "interior" || activeType === "amenity" ? galleryIndex : undefined,
+        totalGalleryImages: totalGalleryImages > 0 ? totalGalleryImages : undefined,
       },
       selectedAmenityId,
       generalPlans: {
         isOpen: generalPlansOpen,
         activeIndex: generalPlanIndex,
         totalCount: totalGeneralPlans,
+        currentLevelLabel,
       },
+      activeHighlight,
+      isTyping,
     },
     inventory: {
       syncStatus,
@@ -145,6 +190,8 @@ export function buildConciergeContext(params: BuildContextParams): ConciergeCont
     capabilities: {
       supportedTools: SUPPORTED_TOOLS,
       availableTours,
+      voiceInputAvailable,
+      voiceOutputAvailable,
     },
   };
 

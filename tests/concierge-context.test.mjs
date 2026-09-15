@@ -42,7 +42,7 @@ test("buildConciergeContext produces a faithful snapshot with valid schemaVersio
   const params = createSampleParams();
   const context = buildConciergeContext(params);
 
-  assert.equal(context.schemaVersion, "1.0.0");
+  assert.equal(context.schemaVersion, "2.0.0");
   assert.equal(context.project.id, "pilitas");
   assert.equal(context.project.language, "es");
   assert.equal(context.project.currency, "USD");
@@ -82,7 +82,7 @@ test("buildConciergeContext is JSON serializable and safe for network or worker 
   const serialized = JSON.stringify(context);
   const deserialized = JSON.parse(serialized);
 
-  assert.equal(deserialized.schemaVersion, "1.0.0");
+  assert.equal(deserialized.schemaVersion, "2.0.0");
   assert.equal(deserialized.project.name, "Las Verandas de Olas Altas");
   assert.equal(deserialized.inventory.residences.length, 16);
 });

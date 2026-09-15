@@ -1,6 +1,7 @@
 import type { UnitId, Language, Currency, Residence } from "../../pilitas/types";
 import { initialResidences } from "../../pilitas/catalog";
 import { answerQuestion } from "../../pilitas/assistant";
+import { resolveKnowledgeQuery } from "../knowledge/resolver";
 import type {
   ConciergeContext,
   ConciergeProvider,
@@ -285,7 +286,40 @@ export const localParserProvider: ConciergeProvider = {
       }
     }
 
-    // 14. Fallback: Commercial Questions answered by answerQuestion()
+    // 14. Smart Recommendation / Selection by Bedrooms from Live Inventory
+    if (/\b(?:muestrame|ensename|ver|selecciona|quiero|recomiendame|recomienda|show\s+me|show|select|want|recommend)\b/.test(clean)) {
+      const wantsTwoBeds = /\b(?:dos|2|two)\s+(?:recamaras?|habitaciones?|dormitorios?|bedrooms?|beds?)\b/.test(clean);
+      const wantsOneBed = /\b(?:una?|1|one)\s+(?:recamaras?|habitaciones?|dormitorios?|bedrooms?|beds?)\b/.test(clean);
+
+      if (wantsTwoBeds || wantsOneBed) {
+        const targetBeds = wantsTwoBeds ? 2 : 1;
+        const availableMatches = input.context.inventory.residences.filter(
+          (u) => u.beds === targetBeds && u.status === "Disponible"
+        );
+
+        if (availableMatches.length > 0) {
+          const recommended = availableMatches[0];
+          return {
+            kind: "action",
+            action: { type: "select_residence", residenceId: recommended.id },
+            thought: es
+              ? `Recomendando ${recommended.name} (${targetBeds} rec., disponible).`
+              : `Recommending ${recommended.name} (${targetBeds} bed, available).`,
+          };
+        }
+      }
+    }
+
+    // 15. Knowledge Base Resolver (Manual v2.0 + Verified Baseline)
+    const knowledgeAnswer = resolveKnowledgeQuery(raw, input.context);
+    if (knowledgeAnswer) {
+      return {
+        kind: "reply",
+        message: knowledgeAnswer.text,
+      };
+    }
+
+    // 16. Fallback: Commercial Questions answered by answerQuestion()
     const adaptedContext = adaptContextForAssistant(input.context);
     const commercialAnswer = answerQuestion(raw, adaptedContext);
 
@@ -295,3 +329,4 @@ export const localParserProvider: ConciergeProvider = {
     };
   },
 };
+

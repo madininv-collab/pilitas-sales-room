@@ -187,3 +187,34 @@ export function setPresentationMode(
     },
   };
 }
+
+export const CONCIERGE_SESSION_STORAGE_KEY = "algo_concierge_session_v2";
+
+export function loadSessionState(): ConversationState | null {
+  if (typeof window === "undefined" || !window.sessionStorage) return null;
+  try {
+    const serialized = window.sessionStorage.getItem(CONCIERGE_SESSION_STORAGE_KEY);
+    if (!serialized) return null;
+    return JSON.parse(serialized) as ConversationState;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSessionState(state: ConversationState): void {
+  if (typeof window === "undefined" || !window.sessionStorage) return;
+  try {
+    window.sessionStorage.setItem(CONCIERGE_SESSION_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore storage quota or disabled storage errors
+  }
+}
+
+export function clearSessionState(): void {
+  if (typeof window === "undefined" || !window.sessionStorage) return;
+  try {
+    window.sessionStorage.removeItem(CONCIERGE_SESSION_STORAGE_KEY);
+  } catch {
+    // Ignore errors
+  }
+}

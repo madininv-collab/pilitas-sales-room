@@ -13,6 +13,8 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
       en: "Welcome to Las Verandas de Olas Altas, an exclusive collection of 16 residences in the vibrant Romantic Zone of Puerto Vallarta.",
     },
     visualAction: { type: "set_facade", facade: "front" },
+    highlightAction: { type: "clear_highlight" },
+    pauseDurationMs: 6000,
     nextStepId: "architecture",
   },
   {
@@ -27,6 +29,8 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
       en: "The building features contemporary architecture integrated into its surroundings, with front and rear units oriented to maximize natural light and ventilation steps from the beach.",
     },
     visualAction: { type: "set_facade", facade: "front" },
+    highlightAction: { type: "clear_highlight" },
+    pauseDurationMs: 6500,
     nextStepId: "show_residence",
   },
   {
@@ -41,6 +45,13 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
       en: "This is Residence 401 on the fourth level: one bedroom, one bath, and 76.90 m² of total area with a private terrace and luxury finishes.",
     },
     visualAction: { type: "select_residence", residenceId: "401" },
+    highlightAction: {
+      type: "set_highlight",
+      targetType: "residence",
+      targetId: "401",
+      label: "Residencia 401 · Nivel 4",
+    },
+    pauseDurationMs: 6500,
     nextStepId: "show_plan",
   },
   {
@@ -55,6 +66,14 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
       en: "Here we can observe the architectural floor plan layout, seamlessly integrating living, dining, open kitchen, and en-suite bedroom with a private terrace.",
     },
     visualAction: { type: "open_floor_plan", residenceId: "401" },
+    highlightAction: {
+      type: "set_highlight",
+      targetType: "plan_region",
+      targetId: "terrace_living",
+      label: "Terraza & Sala Integrada",
+      regionCoordinates: { x: 20, y: 30, width: 48, height: 44 },
+    },
+    pauseDurationMs: 7000,
     nextStepId: "show_amenity_rooftop",
   },
   {
@@ -69,6 +88,13 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
       en: "On the top level we find the Rooftop: an elevated terrace featuring an infinity pool, lounge areas, and panoramic ocean views.",
     },
     visualAction: { type: "show_amenity", amenityId: "rooftop" },
+    highlightAction: {
+      type: "set_highlight",
+      targetType: "amenity",
+      targetId: "rooftop",
+      label: "Rooftop & Alberca Infinity",
+    },
+    pauseDurationMs: 6500,
     nextStepId: "closing",
   },
   {
@@ -83,6 +109,8 @@ export const PILITAS_PRESENTATION_SCRIPT: readonly PresentationStep[] = [
       en: "We invite you to explore the full inventory, floor plans, or ask me any questions about pricing, levels, and availability.",
     },
     visualAction: { type: "close_floor_plan" },
+    highlightAction: { type: "clear_highlight" },
+    pauseDurationMs: 5000,
     nextStepId: null,
   },
 ] as const;
